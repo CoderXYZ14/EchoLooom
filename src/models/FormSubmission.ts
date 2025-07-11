@@ -5,7 +5,7 @@ export interface FormSubmission extends Document {
   participantId: string;
   participantEmail: string;
   participantName: string;
-  responses: any;
+  responses: Record<string, unknown>;
   submittedAt: Date;
   createdAt: Date;
   updatedAt: Date;

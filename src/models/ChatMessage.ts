@@ -5,7 +5,6 @@ export interface ChatMessage extends Document {
   userId: string;
   userName: string;
   message: string;
-  timestamp: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -16,7 +15,6 @@ const ChatMessageSchema: Schema<ChatMessage> = new Schema(
     userId: { type: String, required: true },
     userName: { type: String, required: true },
     message: { type: String, required: true },
-    timestamp: { type: Date, default: Date.now },
   },
   { timestamps: true }
 );
