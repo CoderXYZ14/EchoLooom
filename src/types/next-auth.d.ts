@@ -1,5 +1,4 @@
-import NextAuth from "next-auth";
-import { JWT } from "next-auth/jwt";
+import "next-auth";
 
 declare module "next-auth" {
   interface Session {

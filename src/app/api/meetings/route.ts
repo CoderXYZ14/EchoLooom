@@ -1,11 +1,25 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServerAuthSession } from "@/lib/auth";
 import { createDailyRoom } from "@/lib/daily";
 import Meeting from "@/models/Meeting";
 import User from "@/models/User";
 import dbConnect from "@/lib/db";
 
-export async function POST(req: Request) {
+interface CreateMeetingRequest {
+  title: string;
+  description?: string;
+  scheduledTime: string;
+  duration: number;
+  participants?: ParticipantInput[];
+}
+
+interface ParticipantInput {
+  userId?: string;
+  email: string;
+  name: string;
+}
+
+export async function POST(req: NextRequest) {
   try {
     await dbConnect();
     const session = await getServerAuthSession();
@@ -15,7 +29,7 @@ export async function POST(req: Request) {
     }
 
     const { title, description, scheduledTime, duration, participants } =
-      await req.json();
+      (await req.json()) as CreateMeetingRequest;
 
     if (!title || !scheduledTime || !duration) {
       return NextResponse.json(
@@ -36,7 +50,7 @@ export async function POST(req: Request) {
       scheduledTime: new Date(scheduledTime),
       duration,
       participants:
-        participants?.map((p: any) => ({
+        participants?.map((p) => ({
           userId: p.userId || "",
           email: p.email,
           name: p.name,
@@ -51,30 +65,20 @@ export async function POST(req: Request) {
     );
 
     return NextResponse.json({ meeting }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to create meeting";
     console.error("Error creating meeting:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to create meeting" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const session = await getServerAuthSession();
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // Get user's meetings
-    const user = await User.findOne({
-      googleId: session.user.googleId,
-    }).populate("meetings");
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Find meetings where user is host or participant
@@ -86,11 +90,10 @@ export async function GET(req: Request) {
     const meetings = [...hostedMeetings, ...participatingMeetings];
 
     return NextResponse.json({ meetings });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to fetch meetings";
     console.error("Error fetching meetings:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to fetch meetings" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

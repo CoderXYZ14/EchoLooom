@@ -1,7 +1,6 @@
 export async function createDailyRoom(
   meetingTitle: string,
-  expiryMinutes: number = 60,
-  hostEmail?: string
+  expiryMinutes: number = 60
 ) {
   // Generate a URL-friendly room name based on the meeting title
   const roomName = `echoloom-${meetingTitle
