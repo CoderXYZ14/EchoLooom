@@ -24,34 +24,34 @@ import {
   Globe,
   Star,
   ArrowUpRight,
+  Menu,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import Image from "next/image";
+import { useTheme } from "@/components/theme-provider";
 
 const EchoLoom = () => {
-  const [isDark, setIsDark] = useState(true);
+  const { theme, setTheme } = useTheme();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [visible, setVisible] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { scrollY } = useScroll();
 
   const heroY = useTransform(scrollY, [0, 300], [0, -50]);
   const heroOpacity = useTransform(scrollY, [0, 300], [1, 0.8]);
 
-  useEffect(() => {
-    const updateTheme = () => {
-      if (isDark) {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-    };
-    updateTheme();
-  }, [isDark]);
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -102,13 +102,13 @@ const EchoLoom = () => {
           initial={{ opacity: 1, y: -100 }}
           animate={{ y: visible ? 0 : -100, opacity: visible ? 1 : 0 }}
           transition={{ duration: 0.2 }}
-          className="fixed top-10 left-1/2 transform -translate-x-1/2 z-50 flex max-w-fit border border-white/10 rounded-full bg-black/80 backdrop-blur-xl shadow-[0px_2px_3px_-1px_rgba(0,0,0,0.1),0px_1px_0px_0px_rgba(25,28,33,0.02),0px_0px_0px_1px_rgba(25,28,33,0.08)] pr-2 pl-8 py-2 items-center justify-center space-x-4"
+          className="fixed top-10 left-1/2 transform -translate-x-1/2 z-50 flex max-w-fit border border-gray-200 dark:border-white/10 rounded-full bg-white/80 dark:bg-black/80 backdrop-blur-xl shadow-[0px_2px_3px_-1px_rgba(0,0,0,0.1),0px_1px_0px_0px_rgba(25,28,33,0.02),0px_0px_0px_1px_rgba(25,28,33,0.08)] pr-2 pl-8 py-2 items-center justify-center space-x-4"
         >
           {navItems.map((navItem, idx) => (
             <a
               key={`link=${idx}`}
               href={navItem.link}
-              className="relative text-white/80 items-center flex space-x-1 hover:text-cyan-400 transition-colors"
+              className="relative text-gray-600 dark:text-white/80 items-center flex space-x-1 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
             >
               <span className="block sm:hidden">
                 <navItem.icon className="h-4 w-4" />
@@ -116,7 +116,7 @@ const EchoLoom = () => {
               <span className="hidden sm:block text-sm">{navItem.name}</span>
             </a>
           ))}
-          <Button className="border text-sm font-medium relative border-white/20 bg-white text-black hover:bg-gray-100 px-4 py-2 rounded-full">
+          <Button className="border text-sm font-medium relative border-gray-200 dark:border-white/20 bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100 px-4 py-2 rounded-full">
             <span>Book Demo</span>
             <span className="absolute inset-x-0 w-1/2 mx-auto -bottom-px bg-gradient-to-r from-transparent via-cyan-500 to-transparent h-px" />
           </Button>
@@ -391,7 +391,7 @@ const EchoLoom = () => {
       >
         <path
           d="M0,0V120H1200V0C1200,0 600,60 0,0Z"
-          className="fill-current text-[#0A0A0A]"
+          className="fill-current text-gray-100 dark:text-[#0A0A0A]"
           style={{
             filter: "drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3))",
           }}
@@ -400,117 +400,227 @@ const EchoLoom = () => {
     </div>
   );
 
-  return (
-    <div className="min-h-screen bg-black text-foreground overflow-x-hidden">
-      <FloatingNav />
+  // Enhanced Floating Header with Mobile Menu
+  const FloatingHeader = () => {
+    const navItems = [
+      { name: "Features", href: "#features", icon: Zap },
+      { name: "Demo", href: "#demo", icon: Play },
+      { name: "Pricing", href: "#pricing", icon: Star },
+      { name: "Contact", href: "#contact", icon: MessageSquare },
+    ];
 
-      {/* Floating Header */}
-      <motion.header
-        className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-      >
-        <motion.div
-          className={`flex items-center gap-6 px-6 py-3 rounded-full border backdrop-blur-xl transition-all duration-500 ${
-            isScrolled
-              ? "bg-black/80 border-white/20 shadow-2xl shadow-black/50"
-              : "bg-black/40 border-white/10 shadow-xl"
-          }`}
-          whileHover={{
-            scale: 1.02,
-            boxShadow: "0 20px 40px -12px rgba(0, 0, 0, 0.8)",
-          }}
+    return (
+      <>
+        <motion.header
+          className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
         >
-          {/* Logo */}
           <motion.div
-            className="flex items-center gap-2 text-white"
-            whileHover={{ scale: 1.05 }}
-            transition={{ duration: 0.2 }}
+            className={`flex items-center gap-6 px-6 py-3 rounded-full border backdrop-blur-xl transition-all duration-500 ${
+              isScrolled
+                ? "bg-white/80 dark:bg-black/80 border-gray-200 dark:border-white/20 shadow-2xl"
+                : "bg-white/40 dark:bg-black/40 border-gray-200/50 dark:border-white/10 shadow-xl"
+            }`}
+            whileHover={{
+              scale: 1.02,
+              boxShadow: "0 20px 40px -12px rgba(0, 0, 0, 0.8)",
+            }}
           >
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
-              <motion.div
-                className="w-4 h-4 rounded-full bg-white"
-                animate={{
-                  scale: [1, 1.2, 1],
-                  opacity: [0.8, 1, 0.8],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
-              />
-            </div>
-            <span className="text-xl font-bold tracking-tight">EchoLoom</span>
-          </motion.div>
-
-          {/* Navigation */}
-          <nav className="hidden md:flex items-center space-x-1">
-            {[
-              { name: "Features", href: "#features" },
-              { name: "Demo", href: "#demo" },
-              { name: "Pricing", href: "#pricing" },
-              { name: "Contact", href: "#contact" },
-            ].map((item, index) => (
-              <motion.a
-                key={item.name}
-                href={item.href}
-                className="relative px-4 py-2 text-sm font-medium text-white/80 hover:text-white transition-colors duration-200 rounded-full group"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 + 0.3 }}
-                whileHover={{ scale: 1.05 }}
-              >
-                <span className="relative z-10">{item.name}</span>
+            {/* Logo - hide on mobile when menu is open */}
+            <motion.div
+              className={`flex items-center gap-2 text-gray-900 dark:text-white transition-opacity duration-300 ${
+                isMobileMenuOpen ? "md:flex hidden" : "flex"
+              }`}
+              whileHover={{ scale: 1.05 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
                 <motion.div
-                  className="absolute inset-0 bg-white/10 rounded-full opacity-0 group-hover:opacity-100"
-                  layoutId="navbar-hover"
+                  className="w-4 h-4 rounded-full bg-white"
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    opacity: [0.8, 1, 0.8],
+                  }}
                   transition={{
-                    type: "spring",
-                    duration: 0.4,
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
                   }}
                 />
-              </motion.a>
-            ))}
-          </nav>
+              </div>
+              <span className="text-xl font-bold tracking-tight">EchoLoom</span>
+            </motion.div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-3">
-            <motion.button
-              onClick={() => setIsDark(!isDark)}
-              className="p-2 rounded-full hover:bg-white/10 transition-colors duration-200 text-white/80 hover:text-white"
-              whileHover={{ scale: 1.1, rotate: 180 }}
-              whileTap={{ scale: 0.9 }}
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center space-x-1">
+              {navItems.map((item, index) => (
+                <motion.a
+                  key={item.name}
+                  href={item.href}
+                  className="relative px-4 py-2 text-sm font-medium text-gray-600 dark:text-white/80 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 rounded-full group"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 + 0.3 }}
+                  whileHover={{ scale: 1.05 }}
+                >
+                  <span className="relative z-10">{item.name}</span>
+                  <motion.div
+                    className="absolute inset-0 bg-gray-100 dark:bg-white/10 rounded-full opacity-0 group-hover:opacity-100"
+                    layoutId="navbar-hover"
+                    transition={{
+                      type: "spring",
+                      duration: 0.4,
+                    }}
+                  />
+                </motion.a>
+              ))}
+            </nav>
+
+            {/* Actions */}
+            <div className="flex items-center gap-3">
+              {/* Theme Toggle */}
+              <motion.button
+                onClick={toggleTheme}
+                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors duration-200 text-gray-600 dark:text-white/80 hover:text-gray-900 dark:hover:text-white"
+                whileHover={{ scale: 1.1, rotate: 180 }}
+                whileTap={{ scale: 0.9 }}
+                transition={{ duration: 0.3 }}
+              >
+                {theme === "dark" ? (
+                  <Sun className="w-4 h-4" />
+                ) : (
+                  <Moon className="w-4 h-4" />
+                )}
+              </motion.button>
+
+              {/* Desktop Sign In Button */}
+              <Button
+                size="sm"
+                className="hidden md:flex bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 rounded-full px-4 shadow-lg"
+              >
+                Sign in
+              </Button>
+
+              {/* Mobile Menu Toggle */}
+              <motion.button
+                onClick={toggleMobileMenu}
+                className="md:hidden p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors duration-200 text-gray-600 dark:text-white/80 hover:text-gray-900 dark:hover:text-white"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                transition={{ duration: 0.2 }}
+              >
+                <AnimatePresence mode="wait">
+                  {isMobileMenuOpen ? (
+                    <motion.div
+                      key="close"
+                      initial={{ rotate: -90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: 90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <X className="w-5 h-5" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="menu"
+                      initial={{ rotate: 90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: -90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Menu className="w-5 h-5" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+            </div>
+          </motion.div>
+        </motion.header>
+
+        {/* Mobile Menu Dropdown - Smaller and more compact */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              className="fixed top-20 left-1/2 transform -translate-x-1/2 z-40 w-full max-w-xs px-4 md:hidden"
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            >
+              <motion.div
+                className="bg-white/95 dark:bg-black/95 backdrop-blur-xl border border-gray-200 dark:border-white/20 rounded-2xl shadow-2xl overflow-hidden"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2, delay: 0.1 }}
+              >
+                {/* Mobile Navigation Links - More compact */}
+                <div className="p-4 space-y-2">
+                  {navItems.map((item, index) => (
+                    <motion.a
+                      key={item.name}
+                      href={item.href}
+                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-white/10 transition-colors duration-200 group"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      whileHover={{ x: 4 }}
+                    >
+                      <div className="p-2 rounded-lg bg-gradient-to-br from-gray-100 to-gray-50 dark:from-white/10 dark:to-white/5 group-hover:from-cyan-500/20 group-hover:to-blue-500/20 transition-all duration-300">
+                        <item.icon className="w-4 h-4 text-gray-600 dark:text-white/80 group-hover:text-cyan-600 dark:group-hover:text-cyan-400" />
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-base font-semibold text-gray-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors duration-200">
+                          {item.name}
+                        </span>
+                      </div>
+                      <ArrowRight className="w-3 h-3 text-gray-400 group-hover:text-cyan-500 group-hover:translate-x-1 transition-all duration-200" />
+                    </motion.a>
+                  ))}
+                </div>
+
+                {/* Mobile CTA - More compact */}
+                <div className="p-4 border-t border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
+                  <Button
+                    className="w-full h-10 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 rounded-xl shadow-lg font-semibold text-sm"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Sign in
+                  </Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Overlay */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 md:hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
-            >
-              {isDark ? (
-                <Sun className="w-4 h-4" />
-              ) : (
-                <Moon className="w-4 h-4" />
-              )}
-            </motion.button>
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+          )}
+        </AnimatePresence>
+      </>
+    );
+  };
 
-            <Button
-              size="sm"
-              className="bg-white/10 hover:bg-white/20 text-white border-white/20 rounded-full px-4 backdrop-blur-sm"
-            >
-              Sign in
-            </Button>
+  return (
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white overflow-x-hidden">
+      <FloatingNav />
+      <FloatingHeader />
 
-            <Button
-              size="sm"
-              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 rounded-full px-4 shadow-lg"
-            >
-              Get Started
-            </Button>
-          </div>
-        </motion.div>
-      </motion.header>
-
-      {/* Enhanced Hero Section */}
+      {/* Enhanced Hero Section with responsive text */}
       <motion.section
-        className="relative min-h-screen flex items-center justify-center pt-24 bg-gradient-to-b from-black via-[#0A0A0A] to-[#121212] overflow-hidden"
+        className="relative min-h-screen flex items-center justify-center pt-24 bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-black dark:via-[#0A0A0A] dark:to-[#121212] overflow-hidden"
         style={{ y: heroY, opacity: heroOpacity }}
       >
         {/* Enhanced Background Effects */}
@@ -518,7 +628,7 @@ const EchoLoom = () => {
 
         {/* Grid Pattern Overlay */}
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100px_100px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,black_40%,transparent_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] dark:bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100px_100px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,black_40%,transparent_100%)]" />
         </div>
 
         {/* Floating Elements */}
@@ -549,15 +659,15 @@ const EchoLoom = () => {
         <CurvedDivider />
 
         <div className="max-w-7xl mx-auto px-6 relative z-10">
-          <div className="text-center space-y-12">
-            {/* Enhanced Badge */}
+          <div className="text-center space-y-8 md:space-y-12">
+            {/* Enhanced Badge - responsive */}
             <motion.div
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
               <motion.div
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-white/10 to-white/5 border border-white/20 rounded-full text-white/90 backdrop-blur-sm mb-8 relative overflow-hidden"
+                className="inline-flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-gradient-to-r from-gray-100/80 to-gray-50/80 dark:from-white/10 dark:to-white/5 border border-gray-200 dark:border-white/20 rounded-full text-gray-700 dark:text-white/90 backdrop-blur-sm mb-6 md:mb-8 relative overflow-hidden text-sm"
                 whileHover={{ scale: 1.05 }}
                 animate={{
                   boxShadow: [
@@ -593,24 +703,24 @@ const EchoLoom = () => {
               </motion.div>
             </motion.div>
 
-            {/* Enhanced Typography */}
+            {/* Enhanced Typography - responsive */}
             <motion.div
-              className="space-y-6"
+              className="space-y-4 md:space-y-6"
               initial={{ opacity: 0, y: 100 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
             >
-              {/* Main Headline */}
+              {/* Main Headline - responsive text sizes */}
               <div className="relative">
                 <motion.h1
-                  className="font-black text-5xl sm:text-6xl lg:text-7xl xl:text-8xl leading-[0.85] tracking-tight"
+                  className="font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl leading-[0.9] md:leading-[0.85] tracking-tight"
                   style={{
                     background:
-                      "linear-gradient(135deg, #ffffff 0%, #e5e7eb 50%, #9ca3af 100%)",
+                      "linear-gradient(135deg, #1f2937 0%, #6b7280 50%, #9ca3af 100%)",
                     WebkitBackgroundClip: "text",
                     WebkitTextFillColor: "transparent",
                     backgroundClip: "text",
-                    filter: "drop-shadow(0 4px 12px rgba(255, 255, 255, 0.15))",
+                    filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15))",
                   }}
                 >
                   Meetings that
@@ -643,7 +753,7 @@ const EchoLoom = () => {
 
                 {/* Decorative element behind text */}
                 <motion.div
-                  className="absolute -top-8 -left-8 w-32 h-32 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-full blur-3xl"
+                  className="absolute -top-4 -left-4 md:-top-8 md:-left-8 w-16 h-16 md:w-32 md:h-32 bg-gradient-to-br from-cyan-500/20 to-blue-500/20 rounded-full blur-2xl md:blur-3xl"
                   animate={{
                     scale: [1, 1.2, 1],
                     opacity: [0.3, 0.6, 0.3],
@@ -659,25 +769,25 @@ const EchoLoom = () => {
               </div>
             </motion.div>
 
-            {/* Enhanced Description */}
+            {/* Enhanced Description - responsive */}
             <motion.div
-              className="space-y-4 max-w-3xl mx-auto"
+              className="space-y-3 md:space-y-4 max-w-3xl mx-auto"
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
             >
-              <p className="text-xl md:text-2xl font-medium text-gray-300 leading-relaxed">
+              <p className="text-lg md:text-xl lg:text-2xl font-medium text-gray-700 dark:text-gray-300 leading-relaxed">
                 Individual audio control. Real-time collaboration. Zero
                 friction.
               </p>
-              <p className="text-base md:text-lg text-gray-500 leading-relaxed">
+              <p className="text-sm md:text-base lg:text-lg text-gray-600 dark:text-gray-500 leading-relaxed">
                 Finally, a video conferencing tool designed by developers, for
                 teams that actually get stuff done.
               </p>
 
-              {/* Stats */}
+              {/* Stats - responsive */}
               <motion.div
-                className="flex items-center justify-center gap-8 pt-4"
+                className="flex items-center justify-center gap-4 md:gap-8 pt-4"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1 }}
@@ -692,10 +802,10 @@ const EchoLoom = () => {
                     className="text-center"
                     whileHover={{ scale: 1.1 }}
                   >
-                    <div className="text-2xl font-bold text-white">
+                    <div className="text-lg md:text-2xl font-bold text-gray-900 dark:text-white">
                       {stat.value}
                     </div>
-                    <div className="text-xs text-gray-400 uppercase tracking-wider">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       {stat.label}
                     </div>
                   </motion.div>
@@ -703,9 +813,9 @@ const EchoLoom = () => {
               </motion.div>
             </motion.div>
 
-            {/* Enhanced CTA Buttons */}
+            {/* Enhanced CTA Buttons - responsive */}
             <motion.div
-              className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8"
+              className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center items-center pt-6 md:pt-8"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.8 }}
@@ -716,7 +826,7 @@ const EchoLoom = () => {
               >
                 <Button
                   size="lg"
-                  className="px-10 py-4 text-lg font-bold group bg-gradient-to-r from-white to-gray-100 text-black hover:from-gray-100 hover:to-white shadow-2xl border-0 rounded-2xl relative overflow-hidden"
+                  className="px-8 py-3 md:px-10 md:py-4 text-base md:text-lg font-bold group bg-gradient-to-r from-gray-900 to-gray-800 dark:from-white dark:to-gray-100 text-white dark:text-black hover:from-gray-800 hover:to-gray-700 dark:hover:from-gray-100 dark:hover:to-white shadow-2xl border-0 rounded-2xl relative overflow-hidden"
                 >
                   {/* Button shine effect */}
                   <motion.div
@@ -730,9 +840,9 @@ const EchoLoom = () => {
                       ease: "easeInOut",
                     }}
                   />
-                  <span className="relative z-10 flex items-center gap-3">
+                  <span className="relative z-10 flex items-center gap-2 md:gap-3">
                     Start Free Trial
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-200" />
+                    <ArrowRight className="w-4 h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform duration-200" />
                   </span>
                 </Button>
               </motion.div>
@@ -744,9 +854,9 @@ const EchoLoom = () => {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="px-10 py-4 text-lg font-semibold group border-white/20 text-white hover:border-cyan-400/50 hover:bg-cyan-400/10 backdrop-blur-sm rounded-2xl transition-all duration-300"
+                  className="px-8 py-3 md:px-10 md:py-4 text-base md:text-lg font-semibold group border-gray-200 dark:border-white/20 text-gray-700 dark:text-white hover:border-cyan-400/50 hover:bg-cyan-50 dark:hover:bg-cyan-400/10 backdrop-blur-sm rounded-2xl transition-all duration-300"
                 >
-                  <Play className="w-5 h-5 mr-3" />
+                  <Play className="w-4 h-4 md:w-5 md:h-5 mr-2 md:mr-3" />
                   Watch Demo
                   <motion.div
                     className="absolute inset-0 border border-cyan-400/30 rounded-2xl opacity-0 group-hover:opacity-100"
@@ -762,40 +872,14 @@ const EchoLoom = () => {
                 </Button>
               </motion.div>
             </motion.div>
-
-            {/* Enhanced Trust Indicators */}
-            <motion.div
-              className="pt-16"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.2 }}
-            >
-              <p className="text-sm text-gray-500 mb-6">Trusted by teams at</p>
-              <div className="flex items-center justify-center gap-8 opacity-40">
-                {companies.slice(0, 4).map((company) => (
-                  <motion.div
-                    key={company.name}
-                    className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/5 border border-white/10 text-white/60 font-bold text-lg"
-                    whileHover={{
-                      scale: 1.1,
-                      backgroundColor: "rgba(255,255,255,0.1)",
-                      opacity: 1,
-                    }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    {company.logo}
-                  </motion.div>
-                ))}
-              </div>
-            </motion.div>
           </div>
         </div>
       </motion.section>
 
-      {/* Bento Grid Features */}
+      {/* Bento Grid Features Section */}
       <motion.section
         id="features"
-        className="relative py-32 px-6 bg-[#0A0A0A]"
+        className="relative py-32 px-6 bg-gray-50 dark:bg-[#0A0A0A]"
         initial="initial"
         whileInView="animate"
         viewport={{ once: true, margin: "-100px" }}
@@ -805,10 +889,10 @@ const EchoLoom = () => {
 
         <div className="max-w-7xl mx-auto">
           <motion.div className="text-center mb-20" variants={fadeInUp}>
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-white">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-gray-900 dark:text-white">
               Built for modern teams
             </h2>
-            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Everything you need for seamless collaboration, designed with
               precision
             </p>
@@ -818,7 +902,7 @@ const EchoLoom = () => {
             {bentoFeatures.map((feature) => (
               <motion.div
                 key={feature.title}
-                className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm border border-white/10 hover:border-white/20 transition-all duration-500 p-6 ${feature.className}`}
+                className={`group relative overflow-hidden rounded-3xl bg-gradient-to-br from-white/80 to-gray-50/80 dark:from-white/5 dark:to-white/[0.02] backdrop-blur-sm border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20 transition-all duration-500 p-6 ${feature.className}`}
                 variants={fadeInUp}
                 whileHover={{
                   y: -8,
@@ -826,19 +910,19 @@ const EchoLoom = () => {
                   boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
                 }}
                 style={{
-                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
                 }}
               >
                 <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                 <div className="relative z-10 flex flex-col h-full">
                   <div className="flex items-center gap-3 mb-4">
-                    <feature.icon className="w-6 h-6 text-white group-hover:text-cyan-400 transition-colors duration-300" />
-                    <h3 className="text-lg font-semibold text-white">
+                    <feature.icon className="w-6 h-6 text-gray-700 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors duration-300" />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                       {feature.title}
                     </h3>
                   </div>
-                  <p className="text-sm text-gray-400 mb-6">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
                     {feature.description}
                   </p>
                   <div className="flex-1 flex items-center justify-center">
@@ -850,36 +934,36 @@ const EchoLoom = () => {
           </div>
         </div>
 
-        <CurvedDivider className="text-[#121212]" />
+        <CurvedDivider className="text-gray-100 dark:text-[#121212]" />
       </motion.section>
 
-      {/* How It Works - Modern Design */}
+      {/* How It Works Section */}
       <motion.section
         id="demo"
-        className="relative py-32 px-6 bg-[#121212]"
+        className="relative py-32 px-6 bg-gray-100 dark:bg-[#121212]"
         initial="initial"
         whileInView="animate"
         viewport={{ once: true, margin: "-100px" }}
         variants={stagger}
       >
-        <CurvedDivider flip className="text-[#0A0A0A]" />
+        <CurvedDivider flip className="text-gray-50 dark:text-[#0A0A0A]" />
 
         <div className="max-w-7xl mx-auto">
           <motion.div className="text-center mb-20" variants={fadeInUp}>
             <Badge
               variant="outline"
-              className="border-white/10 bg-white/5 text-white/80 backdrop-blur-sm mb-6"
+              className="border-gray-200 dark:border-white/10 bg-white/80 dark:bg-white/5 text-gray-700 dark:text-white/80 backdrop-blur-sm mb-6"
             >
               <Zap className="w-4 h-4 mr-2" />
               Lightning fast setup
             </Badge>
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-white">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-gray-900 dark:text-white">
               Start in{" "}
               <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
                 30 seconds
               </span>
             </h2>
-            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               No downloads, no complex setup. Just better meetings from the
               moment you sign up.
             </p>
@@ -895,12 +979,12 @@ const EchoLoom = () => {
                 transition={{ duration: 0.3 }}
               >
                 <motion.div
-                  className="relative h-full p-8 rounded-3xl bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm border border-white/10 group-hover:border-white/20 transition-all duration-500 overflow-hidden"
+                  className="relative h-full p-8 rounded-3xl bg-gradient-to-br from-white/80 to-gray-50/80 dark:from-white/5 dark:to-white/[0.02] backdrop-blur-sm border border-gray-200 dark:border-white/10 group-hover:border-gray-300 dark:group-hover:border-white/20 transition-all duration-500 overflow-hidden"
                   style={{
-                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
+                    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
                   }}
                   whileHover={{
-                    boxShadow: "0 20px 40px -12px rgba(0, 0, 0, 0.4)",
+                    boxShadow: "0 10px 40px rgba(0, 0, 0, 0.12)",
                   }}
                 >
                   {/* Animated background gradient */}
@@ -908,7 +992,7 @@ const EchoLoom = () => {
                     className={`absolute inset-0 bg-gradient-to-br ${step.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500 rounded-3xl`}
                   />
 
-                  {/* Step number with modern design */}
+                  {/* Step content with theme-aware colors */}
                   <div className="flex items-start justify-between mb-6">
                     <div
                       className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${step.gradient} flex items-center justify-center shadow-lg relative`}
@@ -922,28 +1006,28 @@ const EchoLoom = () => {
                     </div>
 
                     <motion.div
-                      className={`p-3 rounded-2xl bg-gradient-to-br ${step.gradient} bg-opacity-10 border border-white/10`}
+                      className={`p-3 rounded-2xl bg-gradient-to-br ${step.gradient} bg-opacity-10 border border-gray-200 dark:border-white/10`}
                       whileHover={{ scale: 1.1, rotate: 5 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <step.icon className="w-6 h-6 text-white" />
+                      <step.icon className="w-6 h-6 text-gray-700 dark:text-white" />
                     </motion.div>
                   </div>
 
                   <div className="relative z-10">
-                    <p className="text-sm text-gray-500 uppercase tracking-wider font-medium mb-2">
+                    <p className="text-sm text-gray-500 dark:text-gray-500 uppercase tracking-wider font-medium mb-2">
                       {step.subtitle}
                     </p>
-                    <h3 className="text-2xl font-bold mb-4 text-white group-hover:text-white/90 transition-colors">
+                    <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white group-hover:text-gray-800 dark:group-hover:text-white/90 transition-colors">
                       {step.title}
                     </h3>
-                    <p className="text-gray-400 leading-relaxed text-base">
+                    <p className="text-gray-600 dark:text-gray-400 leading-relaxed text-base">
                       {step.description}
                     </p>
                   </div>
 
                   {/* Progress indicator */}
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/5 rounded-b-3xl overflow-hidden">
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200 dark:bg-white/5 rounded-b-3xl overflow-hidden">
                     <motion.div
                       className={`h-full bg-gradient-to-r ${step.gradient}`}
                       initial={{ width: 0 }}
@@ -958,32 +1042,32 @@ const EchoLoom = () => {
           </div>
         </div>
 
-        <CurvedDivider className="text-[#0F0F0F]" />
+        <CurvedDivider className="text-gray-200 dark:text-[#0F0F0F]" />
       </motion.section>
 
-      {/* Testimonials - Modern Design */}
+      {/* Testimonials Section */}
       <motion.section
         id="testimonials"
-        className="relative py-32 px-6 bg-[#0F0F0F]"
+        className="relative py-32 px-6 bg-white dark:bg-[#0F0F0F]"
         initial="initial"
         whileInView="animate"
         viewport={{ once: true, margin: "-100px" }}
         variants={stagger}
       >
-        <CurvedDivider flip className="text-[#121212]" />
+        <CurvedDivider flip className="text-gray-50 dark:text-[#121212]" />
 
         <div className="max-w-7xl mx-auto">
           <motion.div className="text-center mb-20" variants={fadeInUp}>
             <div className="flex items-center justify-center gap-2 mb-6">
               <Badge
                 variant="outline"
-                className="border-green-500/20 bg-green-500/10 text-green-400 backdrop-blur-sm"
+                className="border-green-500/20 bg-green-500/10 text-green-600 dark:text-green-400 backdrop-blur-sm"
               >
                 <CheckCircle className="w-4 h-4 mr-2" />
                 Verified reviews
               </Badge>
             </div>
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-white">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-gray-900 dark:text-white">
               Loved by{" "}
               <span className="relative">
                 <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
@@ -999,7 +1083,7 @@ const EchoLoom = () => {
               </span>{" "}
               teams
             </h2>
-            <p className="text-lg text-gray-400 max-w-2xl mx-auto mb-12">
+            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-12">
               See why industry leaders choose EchoLoom for their critical
               meetings
             </p>
@@ -1012,7 +1096,7 @@ const EchoLoom = () => {
               {companies.map((company) => (
                 <motion.div
                   key={company.name}
-                  className="flex items-center justify-center w-12 h-12 rounded-xl bg-white/5 border border-white/10 text-white/60 font-bold"
+                  className="flex items-center justify-center w-12 h-12 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/60 font-bold"
                   whileHover={{
                     scale: 1.1,
                     backgroundColor: "rgba(255,255,255,0.1)",
@@ -1036,16 +1120,16 @@ const EchoLoom = () => {
                 transition={{ duration: 0.3 }}
               >
                 <motion.div
-                  className="relative h-full p-8 rounded-3xl bg-gradient-to-br from-white/[0.08] to-white/[0.02] backdrop-blur-sm border border-white/10 group-hover:border-white/20 transition-all duration-500 overflow-hidden"
+                  className="relative h-full p-8 rounded-3xl bg-white dark:bg-gray-900 backdrop-blur-sm border border-gray-200 dark:border-white/10 group-hover:border-gray-300 dark:group-hover:border-white/20 transition-all duration-500 overflow-hidden"
                   style={{
-                    boxShadow: "0 10px 40px rgba(0, 0, 0, 0.3)",
+                    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
                   }}
                   whileHover={{
-                    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.6)",
+                    boxShadow: "0 10px 40px rgba(0, 0, 0, 0.12)",
                   }}
                 >
                   {/* Animated background */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-blue-500/5 to-purple-500/5 dark:from-cyan-500/10 dark:via-blue-500/10 dark:to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl" />
 
                   {/* Rating stars */}
                   <div className="flex items-center gap-1 mb-6 relative z-10">
@@ -1063,7 +1147,7 @@ const EchoLoom = () => {
                     {testimonial.verified && (
                       <Badge
                         variant="outline"
-                        className="ml-2 text-xs border-green-500/30 text-green-400 bg-green-500/10"
+                        className="ml-2 text-xs border-green-500/30 text-green-600 dark:text-green-400 bg-green-500/10"
                       >
                         Verified
                       </Badge>
@@ -1071,12 +1155,12 @@ const EchoLoom = () => {
                   </div>
 
                   {/* Quote */}
-                  <blockquote className="relative z-10 text-gray-300 leading-relaxed text-lg mb-8 font-medium">
-                    <span className="text-4xl text-white/20 absolute -top-2 -left-1">
+                  <blockquote className="relative z-10 text-gray-700 dark:text-gray-300 leading-relaxed text-lg mb-8 font-medium">
+                    <span className="text-4xl text-gray-200 dark:text-white/20 absolute -top-2 -left-1">
                       &quot;
                     </span>
                     {testimonial.quote}
-                    <span className="text-4xl text-white/20 absolute -bottom-6 -right-1">
+                    <span className="text-4xl text-gray-200 dark:text-white/20 absolute -bottom-6 -right-1">
                       &quot;
                     </span>
                   </blockquote>
@@ -1088,26 +1172,26 @@ const EchoLoom = () => {
                       whileHover={{ scale: 1.1 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <Image
+                      <img
                         src={testimonial.avatar}
                         alt={testimonial.name}
-                        className="w-14 h-14 rounded-full object-cover border-2 border-white/10"
+                        className="w-14 h-14 rounded-full object-cover border-2 border-gray-100 dark:border-white/10"
                       />
                       <div className="absolute inset-0 rounded-full bg-gradient-to-br from-cyan-400/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </motion.div>
 
                     <div>
-                      <h4 className="font-semibold text-white mb-1">
+                      <h4 className="font-semibold text-gray-900 dark:text-white mb-1">
                         {testimonial.name}
                       </h4>
-                      <p className="text-sm text-gray-400">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
                         {testimonial.role}
                       </p>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs text-gray-500">at</span>
                         <Badge
                           variant="outline"
-                          className="text-xs border-white/20 text-white/70 bg-white/5"
+                          className="text-xs border-gray-200 dark:border-white/20 text-gray-600 dark:text-white/70 bg-gray-50 dark:bg-white/5"
                         >
                           {testimonial.company}
                         </Badge>
@@ -1120,31 +1204,31 @@ const EchoLoom = () => {
           </div>
         </div>
 
-        <CurvedDivider className="text-[#121212]" />
+        <CurvedDivider className="text-gray-50 dark:text-[#121212]" />
       </motion.section>
 
       {/* Book a Meeting - Modern CTA Section */}
       <motion.section
         id="pricing"
-        className="relative py-32 px-6 bg-[#121212]"
+        className="relative py-32 px-6 bg-gray-50 dark:bg-[#121212]"
         initial="initial"
         whileInView="animate"
         viewport={{ once: true, margin: "-100px" }}
         variants={stagger}
       >
-        <CurvedDivider flip className="text-[#0F0F0F]" />
+        <CurvedDivider flip className="text-white dark:text-[#0F0F0F]" />
 
         <div className="max-w-6xl mx-auto">
           <motion.div className="text-center mb-16" variants={fadeInUp}>
             <Badge
               variant="outline"
-              className="border-purple-500/20 bg-purple-500/10 text-purple-400 backdrop-blur-sm mb-6"
+              className="border-purple-500/20 bg-purple-500/10 text-purple-600 dark:text-purple-400 backdrop-blur-sm mb-6"
             >
               <Sparkles className="w-4 h-4 mr-2" />
               Limited Early Access
             </Badge>
 
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6">
               Ready to{" "}
               <span className="relative">
                 <span className="bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent">
@@ -1167,7 +1251,7 @@ const EchoLoom = () => {
               your meetings?
             </h2>
 
-            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Join the waitlist and be among the first 100 teams to experience
               the future of video conferencing.
             </p>
@@ -1177,7 +1261,7 @@ const EchoLoom = () => {
             {/* Left side - Benefits */}
             <motion.div className="space-y-8" variants={fadeInUp}>
               <div className="space-y-6">
-                <h3 className="text-2xl font-bold text-white mb-6">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                   What you get with early access:
                 </h3>
 
@@ -1217,15 +1301,15 @@ const EchoLoom = () => {
                     whileHover={{ x: 8 }}
                   >
                     <div
-                      className={`p-3 rounded-2xl bg-gradient-to-br ${benefit.gradient} bg-opacity-10 border border-white/10 group-hover:scale-110 transition-transform duration-200`}
+                      className={`p-3 rounded-2xl bg-gradient-to-br ${benefit.gradient} bg-opacity-10 border border-gray-200 dark:border-white/10 group-hover:scale-110 transition-transform duration-200`}
                     >
-                      <benefit.icon className="w-6 h-6 text-white" />
+                      <benefit.icon className="w-6 h-6 text-gray-700 dark:text-white" />
                     </div>
                     <div>
-                      <h4 className="text-lg font-semibold text-white mb-1">
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
                         {benefit.title}
                       </h4>
-                      <p className="text-gray-400 leading-relaxed">
+                      <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
                         {benefit.desc}
                       </p>
                     </div>
@@ -1237,19 +1321,19 @@ const EchoLoom = () => {
             {/* Right side - CTA Card */}
             <motion.div className="relative" variants={fadeInUp}>
               <motion.div
-                className="relative p-8 rounded-3xl bg-gradient-to-br from-white/10 to-white/[0.03] backdrop-blur-sm border border-white/20 overflow-hidden"
+                className="relative p-8 rounded-3xl bg-white dark:bg-gray-900 backdrop-blur-sm border border-gray-200 dark:border-white/20 overflow-hidden"
                 style={{
-                  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.08)",
                 }}
                 whileHover={{
                   scale: 1.02,
-                  boxShadow: "0 35px 70px -12px rgba(0, 0, 0, 0.7)",
+                  boxShadow: "0 16px 64px rgba(0, 0, 0, 0.12)",
                 }}
                 transition={{ duration: 0.3 }}
               >
                 {/* Animated background gradient */}
                 <motion.div
-                  className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-pink-500/10"
+                  className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-purple-500/5 to-pink-500/5 dark:from-cyan-500/10 dark:via-purple-500/10 dark:to-pink-500/10"
                   animate={{
                     opacity: [0.3, 0.7, 0.3],
                   }}
@@ -1278,13 +1362,15 @@ const EchoLoom = () => {
                       }}
                     >
                       <Calendar className="w-4 h-4" />
-                      <span className="text-white">Book your demo slot</span>
+                      <span className="text-gray-700 dark:text-white">
+                        Book your demo slot
+                      </span>
                     </motion.div>
 
-                    <h3 className="text-2xl font-bold text-white">
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
                       Get started today
                     </h3>
-                    <p className="text-gray-400">
+                    <p className="text-gray-600 dark:text-gray-400">
                       Join 200+ companies already on the waitlist
                     </p>
                   </div>
@@ -1311,7 +1397,7 @@ const EchoLoom = () => {
                       </span>
                     </Button>
 
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       Free demo • No commitment • Available this week
                     </p>
 
@@ -1321,14 +1407,16 @@ const EchoLoom = () => {
                         {[...Array(4)].map((_, i) => (
                           <div
                             key={i}
-                            className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 border-2 border-white/20 flex items-center justify-center text-white font-bold text-xs"
+                            className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 border-2 border-white dark:border-gray-700 flex items-center justify-center text-white font-bold text-xs"
                           >
                             {String.fromCharCode(65 + i)}
                           </div>
                         ))}
                       </div>
-                      <p className="text-sm text-gray-400 ml-2">
-                        <span className="text-white font-semibold">200+</span>{" "}
+                      <p className="text-sm text-gray-600 dark:text-gray-400 ml-2">
+                        <span className="text-gray-900 dark:text-white font-semibold">
+                          200+
+                        </span>{" "}
                         teams waiting
                       </p>
                     </div>
@@ -1339,37 +1427,41 @@ const EchoLoom = () => {
           </div>
         </div>
 
-        <CurvedDivider className="text-[#0F0F0F]" />
+        <CurvedDivider className="text-gray-100 dark:text-[#0F0F0F]" />
       </motion.section>
 
       {/* Contact */}
       <motion.section
         id="contact"
-        className="relative py-32 px-6 bg-[#0F0F0F]"
+        className="relative py-32 px-6 bg-gray-100 dark:bg-[#0F0F0F]"
         initial="initial"
         whileInView="animate"
         viewport={{ once: true, margin: "-100px" }}
         variants={stagger}
       >
-        <CurvedDivider flip className="text-[#121212]" />
+        <CurvedDivider flip className="text-gray-50 dark:text-[#121212]" />
 
         <div className="max-w-3xl mx-auto">
           <motion.div className="text-center mb-16" variants={fadeInUp}>
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-white">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 text-gray-900 dark:text-white">
               Let&apos;s build together
             </h2>
-            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Questions? Feedback? Ready to revolutionize your meetings?
               We&apos;d love to hear from you.
             </p>
           </motion.div>
 
           <motion.form
-            className="relative p-8 rounded-3xl bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm border border-white/10"
+            className="relative p-8 rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/10"
             variants={fadeInUp}
             style={{
-              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.4)",
+              boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
             }}
+            whileHover={{
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
+            }}
+            transition={{ duration: 0.3 }}
             onSubmit={(e) => {
               e.preventDefault();
               setIsLoading(true);
@@ -1377,45 +1469,55 @@ const EchoLoom = () => {
             }}
           >
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="text-white font-medium">
+                  <Label
+                    htmlFor="name"
+                    className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
                     Name
                   </Label>
                   <Input
                     id="name"
-                    placeholder="Your name"
-                    className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500/50 focus:ring-cyan-500/20 rounded-xl"
+                    placeholder="Enter your full name"
+                    className="h-12 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-cyan-500/50 focus:ring-cyan-500/20 rounded-xl"
                   />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-white font-medium">
+                  <Label
+                    htmlFor="email"
+                    className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
                     Email
                   </Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="your@email.com"
-                    className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500/50 focus:ring-cyan-500/20 rounded-xl"
+                    placeholder="your@company.com"
+                    className="h-12 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-cyan-500/50 focus:ring-cyan-500/20 rounded-xl"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="message" className="text-white font-medium">
+                <Label
+                  htmlFor="message"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Message
                 </Label>
                 <Textarea
                   id="message"
-                  placeholder="Tell us what you think..."
-                  rows={6}
-                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500/50 focus:ring-cyan-500/20 rounded-xl resize-none"
+                  placeholder="Tell us about your project, questions, or how we can help..."
+                  rows={4}
+                  className="bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-cyan-500/50 focus:ring-cyan-500/20 rounded-xl resize-none"
                 />
               </div>
 
               <Button
                 type="submit"
-                className="w-full py-4 text-lg font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                className="w-full h-12 text-base font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -1426,35 +1528,32 @@ const EchoLoom = () => {
                       repeat: Infinity,
                       ease: "linear",
                     }}
-                    className="w-6 h-6 border-2 border-current border-t-transparent rounded-full"
+                    className="w-5 h-5 border-2 border-current border-t-transparent rounded-full"
                   />
                 ) : (
-                  "Send Message"
+                  <span className="flex items-center justify-center gap-2">
+                    <MessageSquare className="w-5 h-5" />
+                    Send Message
+                  </span>
                 )}
               </Button>
+
+              {/* Simple footer */}
+              <div className="text-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  We typically respond within 24 hours
+                </p>
+              </div>
             </div>
           </motion.form>
         </div>
       </motion.section>
 
       {/* Enhanced Footer */}
-      <footer className="relative bg-gradient-to-b from-black to-[#0A0A0A] border-t border-white/10 overflow-hidden">
+      <footer className="relative bg-gradient-to-b from-gray-50 to-gray-100 dark:from-black dark:to-[#0A0A0A] border-t border-gray-200 dark:border-white/10 overflow-hidden">
         {/* Background Effects */}
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:50px_50px]" />
-          <motion.div
-            className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 rounded-full blur-3xl"
-            animate={{
-              x: [0, 100, 0],
-              y: [0, -50, 0],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] dark:bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:50px_50px]" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-6 py-20">
@@ -1484,10 +1583,12 @@ const EchoLoom = () => {
                     }}
                   />
                 </div>
-                <span className="text-2xl font-bold text-white">EchoLoom</span>
+                <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                  EchoLoom
+                </span>
               </div>
 
-              <p className="text-gray-400 leading-relaxed max-w-sm">
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed max-w-sm">
                 Revolutionizing video conferencing with smart audio control for
                 modern teams.
               </p>
@@ -1501,63 +1602,59 @@ const EchoLoom = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              <motion.a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors duration-200 text-sm"
-                whileHover={{ scale: 1.05 }}
-              >
-                About
-              </motion.a>
-              <motion.a
-                href="#features"
-                className="text-gray-400 hover:text-white transition-colors duration-200 text-sm"
-                whileHover={{ scale: 1.05 }}
-              >
-                Features
-              </motion.a>
-              <motion.a
-                href="#contact"
-                className="text-gray-400 hover:text-white transition-colors duration-200 text-sm"
-                whileHover={{ scale: 1.05 }}
-              >
-                Contact Us
-              </motion.a>
-              <motion.a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors duration-200 text-sm"
-                whileHover={{ scale: 1.05 }}
-              >
-                Privacy Policy
-              </motion.a>
+              {[
+                { name: "About", href: "#" },
+                { name: "Features", href: "#features" },
+                { name: "Contact Us", href: "#contact" },
+                { name: "Privacy Policy", href: "#" },
+              ].map((link) => (
+                <motion.a
+                  key={link.name}
+                  href={link.href}
+                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 text-sm"
+                  whileHover={{ scale: 1.05 }}
+                >
+                  {link.name}
+                </motion.a>
+              ))}
             </motion.div>
           </div>
 
           {/* Bottom Bar */}
           <motion.div
-            className="border-t border-white/10 pt-8"
+            className="border-t border-gray-200 dark:border-white/10 pt-8"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.6 }}
           >
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex flex-col md:flex-row items-center gap-6 text-sm text-gray-400">
+              <div className="flex flex-col md:flex-row items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
                 <span>© 2024 EchoLoom. All rights reserved.</span>
                 <div className="flex items-center gap-6">
-                  <a href="#" className="hover:text-white transition-colors">
+                  <a
+                    href="#"
+                    className="hover:text-gray-900 dark:hover:text-white transition-colors"
+                  >
                     Privacy Policy
                   </a>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <a
+                    href="#"
+                    className="hover:text-gray-900 dark:hover:text-white transition-colors"
+                  >
                     Terms of Service
                   </a>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <a
+                    href="#"
+                    className="hover:text-gray-900 dark:hover:text-white transition-colors"
+                  >
                     Security
                   </a>
                 </div>
               </div>
 
               <motion.div
-                className="flex items-center gap-2 text-sm text-gray-400"
+                className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400"
                 whileHover={{ scale: 1.05 }}
               >
                 <span>Built with</span>
