@@ -8,22 +8,9 @@ import {
   animate,
   AnimatePresence,
 } from "motion/react";
-import {
-  Video,
-  Plus,
-  Calendar,
-  Settings,
-  LogOut,
-  Clock,
-  ChevronRight,
-  Umbrella,
-  Play,
-  X,
-  Users,
-} from "lucide-react";
+import { Video, Plus, Calendar, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Avatar } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -40,6 +27,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DateTimePicker } from "@/components/ui/datetime-picker";
+import SidebarLeft from "@/components/SidebarLeft";
+import SidebarRight from "@/components/SidebarRight";
+import { useSession } from "next-auth/react";
 
 interface MeetingHistoryItem {
   id: string;
@@ -58,6 +48,7 @@ interface UpcomingMeeting {
 const GRADIENT_COLORS = ["#00D4FF", "#7C3AED", "#EC4899", "#F59E0B"];
 
 const EchoLoomDashboard = () => {
+  const { data: session, status } = useSession();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [modalType, setModalType] = useState<
     "join" | "schedule" | "new" | null
@@ -112,22 +103,6 @@ const EchoLoomDashboard = () => {
       participants: 8,
     },
   ];
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-    });
-  };
 
   const closeModal = () => {
     setModalType(null);
@@ -204,6 +179,30 @@ const EchoLoomDashboard = () => {
       return () => document.removeEventListener("keydown", handleEscape);
     }
   }, [modalType, showJoinInput]);
+
+  if (status === "loading") {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+            <motion.div
+              className="w-4 h-4 rounded-full bg-white"
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.8, 1, 0.8],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+          </div>
+          <span className="text-foreground">Loading...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div
@@ -363,100 +362,11 @@ const EchoLoomDashboard = () => {
 
       <div className="flex flex-1 h-full">
         {/* Left Sidebar */}
-        <motion.div
-          className="w-72 p-4 border-r border-border/50 backdrop-blur-md bg-card/30 flex flex-col"
-          initial={{ opacity: 0, x: -50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          {/* Logo */}
-          <motion.div
-            className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-6"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-          >
-            EchoLoom
-          </motion.div>
-
-          {/* Clock Section */}
-          <Card className="mb-4 p-4 bg-card/50 backdrop-blur-md border-border/50">
-            <motion.div
-              className="text-center"
-              style={{ textShadow: glowEffect }}
-            >
-              <motion.div
-                className="text-2xl font-bold text-foreground mb-1"
-                key={currentTime.getSeconds()}
-                initial={{ scale: 0.95 }}
-                animate={{ scale: 1 }}
-                transition={{ duration: 0.1 }}
-              >
-                {formatTime(currentTime)}
-              </motion.div>
-              <div className="text-xs text-muted-foreground">
-                {formatDate(currentTime)}
-              </div>
-            </motion.div>
-          </Card>
-
-          {/* Past Meetings */}
-          <Card className="flex-1 p-4 bg-card/50 backdrop-blur-md border-border/50">
-            <h3 className="text-sm font-semibold mb-3 flex items-center">
-              <Clock className="w-4 h-4 mr-2" />
-              Past Meetings
-            </h3>
-            <div className="space-y-2">
-              {pastMeetings.map((meeting, index) => (
-                <motion.div
-                  key={meeting.id}
-                  className="flex items-center justify-between p-2 rounded-lg hover:bg-accent/10 cursor-pointer transition-colors group"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + index * 0.1 }}
-                  whileHover={{ x: 3 }}
-                >
-                  <div>
-                    <div className="font-medium text-xs group-hover:text-primary transition-colors">
-                      {meeting.name}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {meeting.time} • {meeting.duration}
-                    </div>
-                  </div>
-                  <Play className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
-                </motion.div>
-              ))}
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full mt-3 text-xs text-primary hover:text-primary/80"
-            >
-              View All
-              <ChevronRight className="w-3 h-3 ml-1" />
-            </Button>
-          </Card>
-
-          {/* User Section */}
-          <div className="mt-4 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Avatar className="w-6 h-6">
-                <div className="w-full h-full bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center text-primary-foreground text-xs font-semibold">
-                  JD
-                </div>
-              </Avatar>
-              <span className="text-xs font-medium">John Doe</span>
-            </div>
-            <div className="flex space-x-1">
-              <Button variant="ghost" size="icon" className="w-6 h-6">
-                <Settings className="w-3 h-3" />
-              </Button>
-              <Button variant="ghost" size="icon" className="w-6 h-6">
-                <LogOut className="w-3 h-3" />
-              </Button>
-            </div>
-          </div>
-        </motion.div>
+        <SidebarLeft
+          currentTime={currentTime}
+          pastMeetings={pastMeetings}
+          glowEffect={glowEffect}
+        />
 
         {/* Main Content Area */}
         <div className="flex-1 p-6 flex flex-col justify-center">
@@ -510,57 +420,10 @@ const EchoLoomDashboard = () => {
         </div>
 
         {/* Right Panel */}
-        <motion.div
-          className="w-72 p-4 border-l border-border/50 backdrop-blur-md bg-card/30 flex flex-col"
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          {/* Upcoming Meetings */}
-          <Card className="flex-1 p-4 bg-card/50 backdrop-blur-md border-border/50">
-            <h3 className="text-sm font-semibold mb-3 flex items-center">
-              <Calendar className="w-4 h-4 mr-2" />
-              Upcoming
-            </h3>
-            {upcomingMeetings.length > 0 ? (
-              <div className="space-y-2">
-                {upcomingMeetings.map((meeting, index) => (
-                  <motion.div
-                    key={meeting.id}
-                    className="p-3 rounded-lg border border-border/50 hover:bg-accent/10 transition-colors"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.7 + index * 0.1 }}
-                  >
-                    <div className="font-medium text-xs">{meeting.title}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {meeting.time}
-                    </div>
-                    <div className="text-xs text-muted-foreground flex items-center mt-1">
-                      <Users className="w-3 h-3 mr-1" />
-                      {meeting.participants} participants
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <Umbrella className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-xs text-muted-foreground mb-3">
-                  No meetings scheduled
-                </p>
-              </div>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full mt-3 text-xs text-primary"
-              onClick={handleScheduleMeeting}
-            >
-              + Schedule a meeting
-            </Button>
-          </Card>
-        </motion.div>
+        <SidebarRight
+          upcomingMeetings={upcomingMeetings}
+          onScheduleMeeting={handleScheduleMeeting}
+        />
       </div>
     </motion.div>
   );
