@@ -33,13 +33,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useTheme } from "next-themes";
+import Link from "next/link";
+import { useSession, signOut } from "next-auth/react";
 
 const EchoLoom = () => {
   const { theme, setTheme } = useTheme();
+  const { data: session } = useSession();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [visible, setVisible] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const { scrollY } = useScroll();
 
   const heroY = useTransform(scrollY, [0, 300], [0, -50]);
@@ -69,9 +73,23 @@ const EchoLoom = () => {
         setVisible(false);
       }
     };
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isUserDropdownOpen) {
+        const target = event.target as Element;
+        if (!target.closest("[data-user-dropdown]")) {
+          setIsUserDropdownOpen(false);
+        }
+      }
+    };
+
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [isUserDropdownOpen]);
 
   const fadeInUp = {
     initial: { opacity: 0, y: 60 },
@@ -495,13 +513,60 @@ const EchoLoom = () => {
                 )}
               </motion.button>
 
-              {/* Desktop Sign In Button */}
-              <Button
-                size="sm"
-                className="hidden md:flex bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 rounded-full px-4 shadow-lg"
-              >
-                Sign in
-              </Button>
+              {/* Desktop Auth Section */}
+              {session ? (
+                <div className="hidden md:flex relative" data-user-dropdown>
+                  <motion.button
+                    onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+                    className="flex items-center gap-2 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-white/10 transition-colors duration-200"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <img
+                      src={session.user?.image || "/default-avatar.png"}
+                      alt={session.user?.name || "User"}
+                      className="w-8 h-8 rounded-full border-2 border-gray-200 dark:border-white/20"
+                    />
+                  </motion.button>
+
+                  {/* Desktop User Dropdown */}
+                  <AnimatePresence>
+                    {isUserDropdownOpen && (
+                      <motion.div
+                        className="absolute top-12 right-0 w-64 bg-white dark:bg-gray-900 border border-gray-200 dark:border-white/20 rounded-2xl shadow-2xl overflow-hidden z-50"
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <div className="p-3 border-b border-gray-200 dark:border-white/10">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                            {session.user?.email}
+                          </p>
+                        </div>
+                        <div className="p-2">
+                          <button
+                            onClick={() => signOut({ callbackUrl: "/" })}
+                            className="w-full flex items-center gap-2 p-3 text-left hover:bg-gray-50 dark:hover:bg-white/10 rounded-lg transition-colors duration-200 text-red-600 dark:text-red-400"
+                          >
+                            <LogIn className="w-4 h-4" />
+                            <span>Logout</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <Link href="/signin">
+                  <Button
+                    size="sm"
+                    className="hidden md:flex bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 rounded-full px-4 shadow-lg"
+                  >
+                    Sign in
+                  </Button>
+                </Link>
+              )}
 
               {/* Mobile Menu Toggle */}
               <motion.button
@@ -583,13 +648,45 @@ const EchoLoom = () => {
 
                 {/* Mobile CTA - More compact */}
                 <div className="p-4 border-t border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
-                  <Button
-                    className="w-full h-10 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 rounded-xl shadow-lg font-semibold text-sm"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <LogIn className="w-4 h-4 mr-2" />
-                    Sign in
-                  </Button>
+                  {session ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 p-3 bg-white/50 dark:bg-white/5 rounded-xl">
+                        <img
+                          src={session.user?.image || "/default-avatar.png"}
+                          alt={session.user?.name || "User"}
+                          className="w-8 h-8 rounded-full"
+                        />
+                        <div>
+                          <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                            {session.user?.name}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {session.user?.email}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          signOut({ callbackUrl: "/" });
+                        }}
+                        className="w-full h-10 bg-red-500 hover:bg-red-600 text-white border-0 rounded-xl shadow-lg font-semibold text-sm"
+                      >
+                        <LogIn className="w-4 h-4 mr-2" />
+                        Sign out
+                      </Button>
+                    </div>
+                  ) : (
+                    <Link href="/signin">
+                      <Button
+                        className="w-full h-10 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 rounded-xl shadow-lg font-semibold text-sm"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <LogIn className="w-4 h-4 mr-2" />
+                        Sign in
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               </motion.div>
             </motion.div>
@@ -713,13 +810,8 @@ const EchoLoom = () => {
               {/* Main Headline - responsive text sizes */}
               <div className="relative">
                 <motion.h1
-                  className="font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl leading-[0.9] md:leading-[0.85] tracking-tight"
+                  className="font-black text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl leading-[0.9] md:leading-[0.85] tracking-tight bg-gradient-to-br from-gray-900 via-gray-600 to-gray-400 dark:from-gray-100 dark:via-gray-400 dark:to-gray-500 bg-clip-text text-transparent"
                   style={{
-                    background:
-                      "linear-gradient(135deg, #1f2937 0%, #6b7280 50%, #9ca3af 100%)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
                     filter: "drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15))",
                   }}
                 >
