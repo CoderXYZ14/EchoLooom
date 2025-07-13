@@ -18,12 +18,12 @@ export async function createDailyRoom(
       properties: {
         exp: Math.floor(Date.now() / 1000) + expiryMinutes * 60,
         enable_chat: true,
-        enable_knocking: true,
+        enable_knocking: false, // Disable knocking for headless mode
         start_video_off: false,
         start_audio_off: false,
-        enable_people_ui: true,
-        enable_prejoin_ui: true,
-        enable_network_ui: true,
+        enable_people_ui: false, // Disable Daily.co's UI
+        enable_prejoin_ui: false, // Critical: prevents redirect to Daily.co domain
+        enable_network_ui: false, // Disable network UI
         enable_screenshare: true,
         lang: "en",
       },
@@ -31,7 +31,12 @@ export async function createDailyRoom(
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to create Daily.co room: ${response.statusText}`);
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      `Failed to create Daily.co room: ${response.statusText}. ${
+        errorData.info || ""
+      }`
+    );
   }
 
   const data = await response.json();

@@ -7,7 +7,7 @@ import dbConnect from "@/lib/db";
 
 interface CreateMeetingRequest {
   title: string;
-  description?: string;
+
   scheduledTime: string;
   duration: number;
   participants?: ParticipantInput[];
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { title, description, scheduledTime, duration, participants } =
+    const { title, scheduledTime, duration, participants } =
       (await req.json()) as CreateMeetingRequest;
 
     if (!title || !scheduledTime || !duration) {
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     // Create meeting in database
     const meeting = await Meeting.create({
       title,
-      description,
+
       hostId: session.user.id,
       dailyRoomName: dailyRoom.name,
       scheduledTime: new Date(scheduledTime),
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
 
     // Add meeting to user's meetings
     await User.findOneAndUpdate(
-      { googleId: session.user.googleId },
+      { email: session.user.email },
       { $push: { meetings: meeting._id } }
     );
 

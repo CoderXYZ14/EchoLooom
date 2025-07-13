@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 interface Participant {
-  userId: string;
+  userId?: string; // Optional - can be empty for participants who haven't joined yet
   email: string;
   name: string;
   joined: boolean;
@@ -10,7 +10,7 @@ interface Participant {
 
 export interface Meeting extends Document {
   title: string;
-  description?: string;
+
   hostId: string;
   dailyRoomName: string;
   scheduledTime: Date;
@@ -21,7 +21,7 @@ export interface Meeting extends Document {
 }
 
 const ParticipantSchema = new Schema({
-  userId: { type: String, required: true },
+  userId: { type: String, required: false }, // Optional - filled when user joins
   email: { type: String, required: true },
   name: { type: String, required: true },
   joined: { type: Boolean, default: false },
@@ -31,7 +31,7 @@ const ParticipantSchema = new Schema({
 const MeetingSchema: Schema<Meeting> = new Schema(
   {
     title: { type: String, required: true },
-    description: { type: String },
+
     hostId: { type: String, required: true },
     dailyRoomName: { type: String, required: true },
     scheduledTime: { type: Date, required: true },

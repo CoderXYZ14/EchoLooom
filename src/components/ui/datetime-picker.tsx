@@ -13,9 +13,45 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-export function DateTimePicker() {
+interface DateTimePickerProps {
+  value?: Date;
+  onChange?: (date: Date | undefined) => void;
+}
+
+export function DateTimePicker({ value, onChange }: DateTimePickerProps) {
   const [open, setOpen] = React.useState(false);
-  const [date, setDate] = React.useState<Date | undefined>(undefined);
+  const [internalDate, setInternalDate] = React.useState<Date | undefined>(
+    undefined
+  );
+  const [time, setTime] = React.useState("10:30");
+
+  const date = value || internalDate;
+
+  const handleDateChange = (newDate: Date | undefined) => {
+    if (onChange) {
+      // Combine date with time
+      if (newDate && time) {
+        const [hours, minutes] = time.split(":");
+        const combinedDate = new Date(newDate);
+        combinedDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+        onChange(combinedDate);
+      } else {
+        onChange(newDate);
+      }
+    } else {
+      setInternalDate(newDate);
+    }
+  };
+
+  const handleTimeChange = (newTime: string) => {
+    setTime(newTime);
+    if (date && onChange) {
+      const [hours, minutes] = newTime.split(":");
+      const combinedDate = new Date(date);
+      combinedDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      onChange(combinedDate);
+    }
+  };
 
   return (
     <div className="flex gap-4">
@@ -40,7 +76,7 @@ export function DateTimePicker() {
               selected={date}
               captionLayout="dropdown"
               onSelect={(date) => {
-                setDate(date);
+                handleDateChange(date);
                 setOpen(false);
               }}
             />
@@ -55,7 +91,8 @@ export function DateTimePicker() {
           type="time"
           id="time-picker"
           step="1"
-          defaultValue="10:30:00"
+          value={time}
+          onChange={(e) => handleTimeChange(e.target.value)}
           className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
         />
       </div>

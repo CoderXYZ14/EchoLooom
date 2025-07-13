@@ -26,6 +26,11 @@ import {
   ArrowUpRight,
   Menu,
   X,
+  Twitter,
+  Github,
+  Linkedin,
+  Mail,
+  LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +40,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
+import { SOCIAL_LINKS } from "@/lib/links";
 
 const EchoLoom = () => {
   const { theme, setTheme } = useTheme();
@@ -108,10 +114,10 @@ const EchoLoom = () => {
   // Floating Navbar
   const FloatingNav = () => {
     const navItems = [
-      { name: "Features", link: "#features", icon: Zap },
-      { name: "Demo", link: "#demo", icon: Play },
-      { name: "Pricing", link: "#pricing", icon: Star },
-      { name: "Contact", link: "#contact", icon: MessageSquare },
+      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { name: "Features", href: "#features", icon: Zap },
+      { name: "Demo", href: "#demo", icon: Play },
+      { name: "Contact", href: "#contact", icon: MessageSquare },
     ];
 
     return (
@@ -123,16 +129,16 @@ const EchoLoom = () => {
           className="fixed top-10 left-1/2 transform -translate-x-1/2 z-50 flex max-w-fit border border-gray-200 dark:border-white/10 rounded-full bg-white/80 dark:bg-black/80 backdrop-blur-xl shadow-[0px_2px_3px_-1px_rgba(0,0,0,0.1),0px_1px_0px_0px_rgba(25,28,33,0.02),0px_0px_0px_1px_rgba(25,28,33,0.08)] pr-2 pl-8 py-2 items-center justify-center space-x-4"
         >
           {navItems.map((navItem, idx) => (
-            <a
+            <Link
               key={`link=${idx}`}
-              href={navItem.link}
+              href={navItem.href}
               className="relative text-gray-600 dark:text-white/80 items-center flex space-x-1 hover:text-cyan-600 dark:hover:text-cyan-400 transition-colors"
             >
               <span className="block sm:hidden">
                 <navItem.icon className="h-4 w-4" />
               </span>
               <span className="hidden sm:block text-sm">{navItem.name}</span>
-            </a>
+            </Link>
           ))}
           <Button className="border text-sm font-medium relative border-gray-200 dark:border-white/20 bg-gray-900 dark:bg-white text-white dark:text-black hover:bg-gray-800 dark:hover:bg-gray-100 px-4 py-2 rounded-full">
             <span>Book Demo</span>
@@ -421,9 +427,9 @@ const EchoLoom = () => {
   // Enhanced Floating Header with Mobile Menu
   const FloatingHeader = () => {
     const navItems = [
+      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { name: "Features", href: "#features", icon: Zap },
       { name: "Demo", href: "#demo", icon: Play },
-      { name: "Pricing", href: "#pricing", icon: Star },
       { name: "Contact", href: "#contact", icon: MessageSquare },
     ];
 
@@ -474,25 +480,25 @@ const EchoLoom = () => {
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-1">
               {navItems.map((item, index) => (
-                <motion.a
-                  key={item.name}
-                  href={item.href}
-                  className="relative px-4 py-2 text-sm font-medium text-gray-600 dark:text-white/80 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 rounded-full group"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 + 0.3 }}
-                  whileHover={{ scale: 1.05 }}
-                >
-                  <span className="relative z-10">{item.name}</span>
+                <Link key={item.name} href={item.href}>
                   <motion.div
-                    className="absolute inset-0 bg-gray-100 dark:bg-white/10 rounded-full opacity-0 group-hover:opacity-100"
-                    layoutId="navbar-hover"
-                    transition={{
-                      type: "spring",
-                      duration: 0.4,
-                    }}
-                  />
-                </motion.a>
+                    className="relative px-4 py-2 text-sm font-medium text-gray-600 dark:text-white/80 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 rounded-full group cursor-pointer"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 + 0.3 }}
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    <span className="relative z-10">{item.name}</span>
+                    <motion.div
+                      className="absolute inset-0 bg-gray-100 dark:bg-white/10 rounded-full opacity-0 group-hover:opacity-100"
+                      layoutId="navbar-hover"
+                      transition={{
+                        type: "spring",
+                        duration: 0.4,
+                      }}
+                    />
+                  </motion.div>
+                </Link>
               ))}
             </nav>
 
@@ -623,26 +629,26 @@ const EchoLoom = () => {
                 {/* Mobile Navigation Links - More compact */}
                 <div className="p-4 space-y-2">
                   {navItems.map((item, index) => (
-                    <motion.a
-                      key={item.name}
-                      href={item.href}
-                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-white/10 transition-colors duration-200 group"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      whileHover={{ x: 4 }}
-                    >
-                      <div className="p-2 rounded-lg bg-gradient-to-br from-gray-100 to-gray-50 dark:from-white/10 dark:to-white/5 group-hover:from-cyan-500/20 group-hover:to-blue-500/20 transition-all duration-300">
-                        <item.icon className="w-4 h-4 text-gray-600 dark:text-white/80 group-hover:text-cyan-600 dark:group-hover:text-cyan-400" />
-                      </div>
-                      <div className="flex-1">
-                        <span className="text-base font-semibold text-gray-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors duration-200">
-                          {item.name}
-                        </span>
-                      </div>
-                      <ArrowRight className="w-3 h-3 text-gray-400 group-hover:text-cyan-500 group-hover:translate-x-1 transition-all duration-200" />
-                    </motion.a>
+                    <Link key={item.name} href={item.href}>
+                      <motion.div
+                        className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-white/10 transition-colors duration-200 group cursor-pointer"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        whileHover={{ x: 4 }}
+                      >
+                        <div className="p-2 rounded-lg bg-gradient-to-br from-gray-100 to-gray-50 dark:from-white/10 dark:to-white/5 group-hover:from-cyan-500/20 group-hover:to-blue-500/20 transition-all duration-300">
+                          <item.icon className="w-4 h-4 text-gray-600 dark:text-white/80 group-hover:text-cyan-600 dark:group-hover:text-cyan-400" />
+                        </div>
+                        <div className="flex-1">
+                          <span className="text-base font-semibold text-gray-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors duration-200">
+                            {item.name}
+                          </span>
+                        </div>
+                        <ArrowRight className="w-3 h-3 text-gray-400 group-hover:text-cyan-500 group-hover:translate-x-1 transition-all duration-200" />
+                      </motion.div>
+                    </Link>
                   ))}
                 </div>
 
@@ -919,23 +925,26 @@ const EchoLoom = () => {
                 <Button
                   size="lg"
                   className="px-8 py-3 md:px-10 md:py-4 text-base md:text-lg font-bold group bg-gradient-to-r from-gray-900 to-gray-800 dark:from-white dark:to-gray-100 text-white dark:text-black hover:from-gray-800 hover:to-gray-700 dark:hover:from-gray-100 dark:hover:to-white shadow-2xl border-0 rounded-2xl relative overflow-hidden"
+                  asChild
                 >
-                  {/* Button shine effect */}
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"
-                    animate={{
-                      x: [-200, 200],
-                    }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                  />
-                  <span className="relative z-10 flex items-center gap-2 md:gap-3">
-                    Start Free Trial
-                    <ArrowRight className="w-4 h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform duration-200" />
-                  </span>
+                  <Link href="/dashboard">
+                    {/* Button shine effect */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"
+                      animate={{
+                        x: [-200, 200],
+                      }}
+                      transition={{
+                        duration: 2,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    />
+                    <span className="relative z-10 flex items-center gap-2 md:gap-3">
+                      Start Free Trial
+                      <ArrowRight className="w-4 h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform duration-200" />
+                    </span>
+                  </Link>
                 </Button>
               </motion.div>
 
@@ -1301,7 +1310,7 @@ const EchoLoom = () => {
 
       {/* Book a Meeting - Modern CTA Section */}
       <motion.section
-        id="pricing"
+        id="book-a-meeting"
         className="relative py-32 px-6 bg-gray-50 dark:bg-[#121212]"
         initial="initial"
         whileInView="animate"
@@ -1468,25 +1477,30 @@ const EchoLoom = () => {
                   </div>
 
                   <div className="space-y-4">
-                    <Button className="w-full py-4 text-lg font-semibold bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 hover:from-purple-600 hover:via-pink-600 hover:to-red-600 text-white border-0 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden">
-                      {/* Button shine effect */}
-                      <motion.div
-                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                        animate={{
-                          x: [-100, 400],
-                        }}
-                        transition={{
-                          duration: 3,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                      />
+                    <Button
+                      className="w-full py-4 text-lg font-semibold bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 hover:from-purple-600 hover:via-pink-600 hover:to-red-600 text-white border-0 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden"
+                      asChild
+                    >
+                      <Link href={SOCIAL_LINKS.calendly} target="_blank">
+                        {/* Button shine effect */}
+                        <motion.div
+                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                          animate={{
+                            x: [-100, 400],
+                          }}
+                          transition={{
+                            duration: 3,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                          }}
+                        />
 
-                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        <Calendar className="w-5 h-5" />
-                        Schedule Your Demo
-                        <ArrowUpRight className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-200" />
-                      </span>
+                        <span className="relative z-10 flex items-center justify-center gap-2">
+                          <Calendar className="w-5 h-5" />
+                          Schedule Your Demo
+                          <ArrowUpRight className="w-5 h-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-200" />
+                        </span>
+                      </Link>
                     </Button>
 
                     <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -1684,6 +1698,63 @@ const EchoLoom = () => {
                 Revolutionizing video conferencing with smart audio control for
                 modern teams.
               </p>
+
+              {/* Social Media Icons */}
+              <motion.div
+                className="flex items-center gap-4 mt-6"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+              >
+                {[
+                  {
+                    icon: Twitter,
+                    href: SOCIAL_LINKS.twitter,
+                    label: "Twitter",
+                    color: "hover:text-blue-400",
+                  },
+                  {
+                    icon: Github,
+                    href: SOCIAL_LINKS.github,
+                    label: "GitHub",
+                    color: "hover:text-gray-900 dark:hover:text-gray-300",
+                  },
+                  {
+                    icon: Linkedin,
+                    href: SOCIAL_LINKS.linkedin,
+                    label: "LinkedIn",
+                    color: "hover:text-blue-600",
+                  },
+                  {
+                    icon: Mail,
+                    href: SOCIAL_LINKS.email,
+                    label: "Email",
+                    color: "hover:text-green-500",
+                  },
+                ].map((social, index) => (
+                  <Link
+                    key={social.label}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`text-gray-500 dark:text-gray-400 ${social.color} transition-colors duration-200`}
+                    aria-label={social.label}
+                  >
+                    <motion.span
+                      whileHover={{ scale: 1.1, y: -2 }}
+                      whileTap={{ scale: 0.95 }}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.6, delay: 0.4 + index * 0.1 }}
+                      className="block"
+                    >
+                      <social.icon className="w-5 h-5" />
+                    </motion.span>
+                  </Link>
+                ))}
+              </motion.div>
             </motion.div>
 
             {/* Navigation Links */}
@@ -1700,14 +1771,15 @@ const EchoLoom = () => {
                 { name: "Contact Us", href: "#contact" },
                 { name: "Privacy Policy", href: "#" },
               ].map((link) => (
-                <motion.a
+                <Link
                   key={link.name}
                   href={link.href}
                   className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 text-sm"
-                  whileHover={{ scale: 1.05 }}
                 >
-                  {link.name}
-                </motion.a>
+                  <motion.span whileHover={{ scale: 1.05 }}>
+                    {link.name}
+                  </motion.span>
+                </Link>
               ))}
             </motion.div>
           </div>
@@ -1722,30 +1794,24 @@ const EchoLoom = () => {
           >
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="flex flex-col md:flex-row items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
-                <span>© 2024 EchoLoom. All rights reserved.</span>
+                <span>© 2025 EchoLoom. All rights reserved.</span>
                 <div className="flex items-center gap-6">
-                  <a
-                    href="#"
+                  <Link
+                    href="/privacy"
                     className="hover:text-gray-900 dark:hover:text-white transition-colors"
                   >
                     Privacy Policy
-                  </a>
-                  <a
-                    href="#"
+                  </Link>
+                  <Link
+                    href="/terms"
                     className="hover:text-gray-900 dark:hover:text-white transition-colors"
                   >
                     Terms of Service
-                  </a>
-                  <a
-                    href="#"
-                    className="hover:text-gray-900 dark:hover:text-white transition-colors"
-                  >
-                    Security
-                  </a>
+                  </Link>
                 </div>
               </div>
 
-              <motion.div
+              {/* <motion.div
                 className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400"
                 whileHover={{ scale: 1.05 }}
               >
@@ -1764,7 +1830,7 @@ const EchoLoom = () => {
                   ❤️
                 </motion.span>
                 <span>by developers, for developers</span>
-              </motion.div>
+              </motion.div> */}
             </div>
           </motion.div>
         </div>

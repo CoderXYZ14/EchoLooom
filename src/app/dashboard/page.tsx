@@ -27,29 +27,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DateTimePicker } from "@/components/ui/datetime-picker";
-import SidebarLeft from "@/components/SidebarLeft";
-import SidebarRight from "@/components/SidebarRight";
+
 import { useSession } from "next-auth/react";
-
-interface MeetingHistoryItem {
-  id: string;
-  name: string;
-  time: string;
-  duration: string;
-}
-
-interface UpcomingMeeting {
-  id: string;
-  title: string;
-  time: string;
-  participants: number;
-}
+import axios from "axios";
 
 const GRADIENT_COLORS = ["#00D4FF", "#7C3AED", "#EC4899", "#F59E0B"];
 
 const EchoLoomDashboard = () => {
-  const { data: session, status } = useSession();
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const { status } = useSession();
   const [modalType, setModalType] = useState<
     "join" | "schedule" | "new" | null
   >(null);
@@ -62,11 +47,15 @@ const EchoLoomDashboard = () => {
     duration: "30",
   });
   const [newMeetingTitle, setNewMeetingTitle] = useState("");
+  const [isCreatingMeeting, setIsCreatingMeeting] = useState(false);
+  const [isSchedulingMeeting, setIsSchedulingMeeting] = useState(false);
+  const [isJoiningMeeting, setIsJoiningMeeting] = useState(false);
+
   const color = useMotionValue(GRADIENT_COLORS[0]);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentTime(new Date());
+      // setCurrentTime(new Date()); // This line was removed
     }, 1000);
 
     animate(color, GRADIENT_COLORS, {
@@ -82,34 +71,16 @@ const EchoLoomDashboard = () => {
   const backgroundGradient = useMotionTemplate`radial-gradient(circle at 50% 50%, ${color}15 0%, transparent 50%)`;
   const glowEffect = useMotionTemplate`0 0 20px ${color}40`;
 
-  const pastMeetings: MeetingHistoryItem[] = [
-    { id: "1", name: "Team Standup", time: "2:30 PM", duration: "25 min" },
-    { id: "2", name: "Client Review", time: "11:00 AM", duration: "45 min" },
-    { id: "3", name: "Design Sync", time: "Yesterday", duration: "30 min" },
-    { id: "4", name: "Product Demo", time: "Yesterday", duration: "60 min" },
-  ];
-
-  const upcomingMeetings: UpcomingMeeting[] = [
-    {
-      id: "1",
-      title: "Weekly Planning",
-      time: "3:00 PM Today",
-      participants: 5,
-    },
-    {
-      id: "2",
-      title: "Client Presentation",
-      time: "Tomorrow 10:00 AM",
-      participants: 8,
-    },
-  ];
-
   const closeModal = () => {
     setModalType(null);
     setShowJoinInput(false);
     setMeetingCode("");
     setScheduleData({ title: "", date: undefined, emails: "", duration: "30" });
     setNewMeetingTitle("");
+    // Reset loading states
+    setIsCreatingMeeting(false);
+    setIsSchedulingMeeting(false);
+    setIsJoiningMeeting(false);
   };
 
   const handleJoinMeeting = () => {
@@ -122,6 +93,95 @@ const EchoLoomDashboard = () => {
 
   const handleNewMeeting = () => {
     setModalType("new");
+  };
+
+  const joinMeeting = async () => {
+    if (!meetingCode.trim()) {
+      alert("Meeting code is required");
+      return;
+    }
+
+    setIsJoiningMeeting(true);
+    try {
+      // Redirect to our custom meeting room
+      const roomName = meetingCode.trim();
+      window.open(`/meeting/${roomName}`, "_blank");
+      closeModal();
+    } catch (error: unknown) {
+      console.error("Error joining meeting:", error);
+      alert("Failed to join meeting");
+    } finally {
+      setIsJoiningMeeting(false);
+    }
+  };
+
+  const createInstantMeeting = async () => {
+    if (!newMeetingTitle.trim()) {
+      alert("Meeting title is required");
+      return;
+    }
+
+    setIsCreatingMeeting(true);
+    try {
+      const response = await axios.post("/api/meetings/create", {
+        title: newMeetingTitle.trim(),
+        duration: 60, // Default 1 hour
+      });
+
+      if (response.data.success) {
+        // Redirect to our custom meeting room instead of Daily.co domain
+        const roomName = response.data.meeting.dailyRoomName;
+        window.open(`/meeting/${roomName}`, "_blank");
+        closeModal();
+      } else {
+        alert(response.data.error || "Failed to create meeting");
+      }
+    } catch (error) {
+      console.error("Error creating meeting:", error);
+      alert("Failed to create meeting");
+    } finally {
+      setIsCreatingMeeting(false);
+    }
+  };
+
+  const scheduleMeeting = async () => {
+    if (!scheduleData.title.trim()) {
+      alert("Meeting title is required");
+      return;
+    }
+
+    if (!scheduleData.date) {
+      alert("Meeting date and time is required");
+      return;
+    }
+
+    if (!scheduleData.duration) {
+      alert("Meeting duration is required");
+      return;
+    }
+
+    setIsSchedulingMeeting(true);
+    try {
+      const response = await axios.post("/api/meetings/schedule", {
+        title: scheduleData.title.trim(),
+        scheduledTime: scheduleData.date.toISOString(),
+        duration: parseInt(scheduleData.duration),
+        participantEmails: scheduleData.emails.trim(),
+      });
+
+      if (response.data.success) {
+        alert("Meeting scheduled successfully!");
+        closeModal();
+        // Optionally refresh the page or update the upcoming meetings list
+      } else {
+        alert(response.data.error || "Failed to schedule meeting");
+      }
+    } catch (error: unknown) {
+      console.error("Error scheduling meeting:", error);
+      alert("Failed to schedule meeting");
+    } finally {
+      setIsSchedulingMeeting(false);
+    }
   };
 
   const ActionButton = ({
@@ -229,16 +289,26 @@ const EchoLoomDashboard = () => {
                   autoFocus
                 />
                 <Button
-                  onClick={() => {
-                    if (meetingCode.trim()) {
-                      // Handle join logic here
-                      console.log("Joining meeting:", meetingCode);
-                      closeModal();
-                    }
-                  }}
+                  onClick={joinMeeting}
+                  disabled={isJoiningMeeting}
                   className="bg-primary hover:bg-primary/90"
                 >
-                  Join
+                  {isJoiningMeeting ? (
+                    <div className="flex items-center gap-2">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{
+                          duration: 1,
+                          repeat: Infinity,
+                          ease: "linear",
+                        }}
+                        className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
+                      />
+                      Joining...
+                    </div>
+                  ) : (
+                    "Join"
+                  )}
                 </Button>
                 <Button variant="ghost" size="icon" onClick={closeModal}>
                   <X className="w-4 h-4" />
@@ -275,7 +345,12 @@ const EchoLoomDashboard = () => {
             </div>
             <div className="space-y-2">
               <Label>Date & Time</Label>
-              <DateTimePicker />
+              <DateTimePicker
+                value={scheduleData.date}
+                onChange={(date: Date | undefined) =>
+                  setScheduleData((prev) => ({ ...prev, date }))
+                }
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="emails">Participant Emails</Label>
@@ -314,12 +389,25 @@ const EchoLoomDashboard = () => {
             </div>
             <Button
               className="w-full bg-primary hover:bg-primary/90 mt-6"
-              onClick={() => {
-                console.log("Creating scheduled meeting:", scheduleData);
-                closeModal();
-              }}
+              onClick={scheduleMeeting}
+              disabled={isSchedulingMeeting}
             >
-              Create Meeting
+              {isSchedulingMeeting ? (
+                <div className="flex items-center gap-2">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
+                    className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
+                  />
+                  Scheduling...
+                </div>
+              ) : (
+                "Schedule Meeting"
+              )}
             </Button>
           </div>
         </DialogContent>
@@ -335,7 +423,7 @@ const EchoLoomDashboard = () => {
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
-              <Label htmlFor="newTitle">Meeting Title (Optional)</Label>
+              <Label htmlFor="newTitle">Meeting Title</Label>
               <Input
                 id="newTitle"
                 value={newMeetingTitle}
@@ -346,84 +434,79 @@ const EchoLoomDashboard = () => {
             </div>
             <Button
               className="w-full bg-primary hover:bg-primary/90 mt-6"
-              onClick={() => {
-                console.log(
-                  "Starting new meeting:",
-                  newMeetingTitle || "Untitled Meeting"
-                );
-                closeModal();
-              }}
+              onClick={createInstantMeeting}
+              disabled={isCreatingMeeting}
             >
-              Start Now
+              {isCreatingMeeting ? (
+                <div className="flex items-center gap-2">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 1,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
+                    className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
+                  />
+                  Creating...
+                </div>
+              ) : (
+                "Start Now"
+              )}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      <div className="flex flex-1 h-full">
-        {/* Left Sidebar */}
-        <SidebarLeft
-          currentTime={currentTime}
-          pastMeetings={pastMeetings}
-          glowEffect={glowEffect}
-        />
+      {/* Main Content Area */}
+      <div className="flex-1 p-6 flex flex-col justify-center">
+        <motion.div
+          className="max-w-2xl mx-auto w-full"
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <div className="text-center mb-8">
+            <motion.h1
+              className="text-2xl font-bold mb-2 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              Welcome back
+            </motion.h1>
+            <motion.p
+              className="text-muted-foreground text-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+            >
+              Start or join a meeting with just one click
+            </motion.p>
+          </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 p-6 flex flex-col justify-center">
-          <motion.div
-            className="max-w-2xl mx-auto w-full"
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <div className="text-center mb-8">
-              <motion.h1
-                className="text-2xl font-bold mb-2 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-              >
-                Welcome back
-              </motion.h1>
-              <motion.p
-                className="text-muted-foreground text-sm"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-              >
-                Start or join a meeting with just one click
-              </motion.p>
-            </div>
-
-            {/* Action Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-lg mx-auto">
-              <ActionButton
-                icon={Video}
-                label="New Meeting"
-                color="#F59E0B"
-                onClick={handleNewMeeting}
-              />
-              <ActionButton
-                icon={Plus}
-                label="Join Meeting"
-                color="#00D4FF"
-                onClick={handleJoinMeeting}
-              />
-              <ActionButton
-                icon={Calendar}
-                label="Schedule"
-                color="#7C3AED"
-                onClick={handleScheduleMeeting}
-              />
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Right Panel */}
-        <SidebarRight
-          upcomingMeetings={upcomingMeetings}
-          onScheduleMeeting={handleScheduleMeeting}
-        />
+          {/* Action Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-lg mx-auto">
+            <ActionButton
+              icon={Video}
+              label="New Meeting"
+              color="#F59E0B"
+              onClick={handleNewMeeting}
+            />
+            <ActionButton
+              icon={Plus}
+              label="Join Meeting"
+              color="#00D4FF"
+              onClick={handleJoinMeeting}
+            />
+            <ActionButton
+              icon={Calendar}
+              label="Schedule"
+              color="#7C3AED"
+              onClick={handleScheduleMeeting}
+            />
+          </div>
+        </motion.div>
       </div>
     </motion.div>
   );

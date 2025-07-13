@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { motion } from "motion/react";
+import { motion, MotionValue } from "motion/react";
 import { Clock, ChevronRight, Play, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,18 +14,23 @@ interface MeetingHistoryItem {
   name: string;
   time: string;
   duration: string;
+  scheduledTime: Date;
+  dailyRoomName: string;
+  isHost: boolean;
 }
 
 interface SidebarLeftProps {
   currentTime: Date;
   pastMeetings: MeetingHistoryItem[];
-  glowEffect: any;
+  glowEffect: MotionValue<string>;
+  loadingPastMeetings: boolean;
 }
 
 const SidebarLeft: React.FC<SidebarLeftProps> = ({
   currentTime,
   pastMeetings,
   glowEffect,
+  loadingPastMeetings,
 }) => {
   const { data: session } = useSession();
 
@@ -106,35 +111,57 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({
           Past Meetings
         </h3>
         <div className="space-y-2">
-          {pastMeetings.map((meeting, index) => (
-            <motion.div
-              key={meeting.id}
-              className="flex items-center justify-between p-2 rounded-lg hover:bg-accent/10 cursor-pointer transition-colors group"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 + index * 0.1 }}
-              whileHover={{ x: 3 }}
-            >
-              <div>
-                <div className="font-medium text-xs group-hover:text-primary transition-colors">
-                  {meeting.name}
+          {loadingPastMeetings ? (
+            <div className="flex items-center justify-center py-8">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{
+                  duration: 1,
+                  repeat: Infinity,
+                  ease: "linear",
+                }}
+                className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
+              />
+            </div>
+          ) : pastMeetings.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-xs text-muted-foreground">No past meetings</p>
+            </div>
+          ) : (
+            pastMeetings.map((meeting, index) => (
+              <motion.div
+                key={meeting.id}
+                className="flex items-center justify-between p-2 rounded-lg hover:bg-accent/10 cursor-pointer transition-colors group"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 + index * 0.1 }}
+                whileHover={{ x: 3 }}
+              >
+                <div>
+                  <div className="font-medium text-xs group-hover:text-primary transition-colors">
+                    {meeting.name}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {meeting.time} • {meeting.duration}
+                  </div>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {meeting.time} • {meeting.duration}
-                </div>
-              </div>
-              <Play className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
-            </motion.div>
-          ))}
+                <Play className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
+              </motion.div>
+            ))
+          )}
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full mt-3 text-xs text-primary hover:text-primary/80"
-        >
-          View All
-          <ChevronRight className="w-3 h-3 ml-1" />
-        </Button>
+        {!loadingPastMeetings && pastMeetings.length >= 5 && (
+          <Link href="/dashboard/meeting-history">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full mt-3 text-xs text-primary hover:text-primary/80"
+            >
+              View All
+              <ChevronRight className="w-3 h-3 ml-1" />
+            </Button>
+          </Link>
+        )}
       </Card>
 
       {/* User Section */}

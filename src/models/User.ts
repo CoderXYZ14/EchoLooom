@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface User extends Document {
-  googleId: string;
+  googleId?: string; // Optional - can be null for users created from meeting invitations
   email: string;
   name: string;
   image?: string;
@@ -12,7 +12,7 @@ export interface User extends Document {
 
 const UserSchema: Schema<User> = new Schema(
   {
-    googleId: { type: String, required: true, unique: true },
+    googleId: { type: String, unique: true, sparse: true }, // sparse allows multiple null values
     email: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     image: { type: String },

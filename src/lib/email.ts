@@ -4,14 +4,12 @@ export async function sendMeetingInvite({
   meetingTitle,
   meetingTime,
   meetingLink,
-  meetingDescription,
 }: {
   to: string;
   hostName: string;
   meetingTitle: string;
   meetingTime: Date;
   meetingLink: string;
-  meetingDescription?: string;
 }) {
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -29,11 +27,7 @@ export async function sendMeetingInvite({
           <p><strong>Meeting:</strong> ${meetingTitle}</p>
           <p><strong>Host:</strong> ${hostName}</p>
           <p><strong>Time:</strong> ${meetingTime.toLocaleString()}</p>
-          ${
-            meetingDescription
-              ? `<p><strong>Description:</strong> ${meetingDescription}</p>`
-              : ""
-          }
+
           <p>
             <a href="${meetingLink}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">
               Join Meeting
