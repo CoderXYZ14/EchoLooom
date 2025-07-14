@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "motion/react";
-import { Calendar, Users, Umbrella } from "lucide-react";
+import { Calendar, Users, Umbrella, Edit2, Trash2 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 
@@ -21,6 +21,8 @@ interface SidebarRightProps {
   upcomingMeetings: UpcomingMeeting[];
   loadingUpcomingMeetings?: boolean;
   onMeetingClick?: (meeting: UpcomingMeeting, status: MeetingStatus) => void;
+  onEditMeeting?: (meeting: UpcomingMeeting) => void;
+  onDeleteMeeting?: (meeting: UpcomingMeeting) => void;
 }
 
 interface MeetingStatus {
@@ -34,6 +36,8 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
   upcomingMeetings,
   loadingUpcomingMeetings = false,
   onMeetingClick,
+  onEditMeeting,
+  onDeleteMeeting,
 }) => {
   const handleMeetingClick = (
     meeting: UpcomingMeeting,
@@ -85,7 +89,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
               return (
                 <motion.div
                   key={meeting.id}
-                  className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                  className={`p-3 rounded-lg border transition-all ${
                     isLive
                       ? "border-green-500/50 bg-green-500/10 hover:bg-green-500/20"
                       : startsWithin15Min
@@ -95,31 +99,61 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.7 + index * 0.1 }}
-                  onClick={() =>
-                    handleMeetingClick(meeting, {
-                      isLive,
-                      isUpcoming,
-                      hasEnded,
-                      startsWithin15Min,
-                    })
-                  }
                 >
-                  <div className="font-medium text-xs">{meeting.title}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {meeting.time}
-                  </div>
-                  <div className="text-xs text-muted-foreground flex items-center mt-1">
-                    <Users className="w-3 h-3 mr-1" />
-                    {meeting.participants} participants
-                  </div>
-                  {isLive && (
-                    <div className="text-xs text-green-600 font-medium mt-1">
-                      • Live now
+                  <div
+                    className="cursor-pointer"
+                    onClick={() =>
+                      handleMeetingClick(meeting, {
+                        isLive,
+                        isUpcoming,
+                        hasEnded,
+                        startsWithin15Min,
+                      })
+                    }
+                  >
+                    <div className="font-medium text-xs">{meeting.title}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {meeting.time}
                     </div>
-                  )}
-                  {startsWithin15Min && (
-                    <div className="text-xs text-yellow-600 font-medium mt-1">
-                      • Starting soon
+                    <div className="text-xs text-muted-foreground flex items-center mt-1">
+                      <Users className="w-3 h-3 mr-1" />
+                      {meeting.participants} participants
+                    </div>
+                    {isLive && (
+                      <div className="text-xs text-green-600 font-medium mt-1">
+                        • Live now
+                      </div>
+                    )}
+                    {startsWithin15Min && (
+                      <div className="text-xs text-yellow-600 font-medium mt-1">
+                        • Starting soon
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Edit and Delete buttons for host */}
+                  {meeting.isHost && !isLive && (
+                    <div className="flex items-center justify-end gap-1 mt-2 pt-2 border-t border-border/30">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditMeeting?.(meeting);
+                        }}
+                        className="p-1 rounded hover:bg-accent/20 transition-colors"
+                        title="Edit meeting"
+                      >
+                        <Edit2 className="w-3 h-3 text-muted-foreground hover:text-primary" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteMeeting?.(meeting);
+                        }}
+                        className="p-1 rounded hover:bg-accent/20 transition-colors"
+                        title="Delete meeting"
+                      >
+                        <Trash2 className="w-3 h-3 text-muted-foreground hover:text-red-500" />
+                      </button>
                     </div>
                   )}
                 </motion.div>

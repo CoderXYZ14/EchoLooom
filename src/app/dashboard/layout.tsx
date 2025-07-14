@@ -9,6 +9,8 @@ import {
 } from "motion/react";
 import SidebarLeft from "@/components/SidebarLeft";
 import SidebarRight from "@/components/SidebarRight";
+import { EditMeetingDialog } from "@/components/EditMeetingDialog";
+import { DashboardProvider } from "@/contexts/DashboardContext";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 
@@ -34,6 +36,24 @@ interface UpcomingMeeting {
   duration: number;
 }
 
+interface RawMeetingData {
+  id: string;
+  title: string;
+  scheduledTime: string | Date;
+  duration: number;
+  participants?:
+    | Array<{ email: string; name: string; joined: boolean }>
+    | number;
+  dailyRoomName: string;
+}
+
+interface MeetingUpdateData {
+  title?: string;
+  scheduledTime?: string;
+  duration?: number;
+  participantEmails?: string;
+}
+
 const GRADIENT_COLORS = ["#00D4FF", "#7C3AED", "#EC4899", "#F59E0B"];
 
 export default function DashboardLayout({
@@ -49,6 +69,10 @@ export default function DashboardLayout({
   );
   const [loadingPastMeetings, setLoadingPastMeetings] = useState(true);
   const [loadingUpcomingMeetings, setLoadingUpcomingMeetings] = useState(true);
+  const [editingMeeting, setEditingMeeting] = useState<UpcomingMeeting | null>(
+    null
+  );
+  const [isUpdatingMeeting, setIsUpdatingMeeting] = useState(false);
   const color = useMotionValue(GRADIENT_COLORS[0]);
 
   // Meeting status interface
@@ -172,6 +196,185 @@ export default function DashboardLayout({
     window.open(`/meeting/${meeting.dailyRoomName}`, "_blank");
   };
 
+  const handleEditMeeting = (meeting: UpcomingMeeting) => {
+    setEditingMeeting(meeting);
+  };
+
+  const handleDeleteMeeting = async (meeting: UpcomingMeeting) => {
+    if (confirm(`Are you sure you want to delete "${meeting.title}"?`)) {
+      // Optimistic update - remove from UI immediately
+      const originalMeetings = [...upcomingMeetings];
+      setUpcomingMeetings((prev) => prev.filter((m) => m.id !== meeting.id));
+
+      try {
+        const response = await axios.delete(
+          `/api/meetings/delete?id=${meeting.id}`
+        );
+        if (response.data.success) {
+          // Success - meeting already removed from UI
+          console.log("Meeting deleted successfully");
+        } else {
+          // Revert on error
+          setUpcomingMeetings(originalMeetings);
+          alert(response.data.error || "Failed to delete meeting");
+        }
+      } catch (error) {
+        // Revert on error
+        setUpcomingMeetings(originalMeetings);
+        console.error("Error deleting meeting:", error);
+        alert("Failed to delete meeting");
+      }
+    }
+  };
+
+  const addNewMeetingToState = (
+    newMeeting: RawMeetingData,
+    replaceId?: string
+  ) => {
+    // Format the new meeting to match the UpcomingMeeting interface
+    const scheduledTime = new Date(newMeeting.scheduledTime);
+    const isToday = scheduledTime.toDateString() === new Date().toDateString();
+    const isTomorrow =
+      scheduledTime.toDateString() ===
+      new Date(Date.now() + 86400000).toDateString();
+
+    let timeDisplay;
+    if (isToday) {
+      timeDisplay = `${scheduledTime.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      })} Today`;
+    } else if (isTomorrow) {
+      timeDisplay = `Tomorrow ${scheduledTime.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      })}`;
+    } else {
+      timeDisplay = scheduledTime.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+    }
+
+    const formattedMeeting: UpcomingMeeting = {
+      id: newMeeting.id,
+      title: newMeeting.title,
+      time: timeDisplay,
+      scheduledTime: scheduledTime,
+      dailyRoomName: newMeeting.dailyRoomName,
+      isHost: true, // User is always host of meetings they create
+      participants:
+        (typeof newMeeting.participants === "number"
+          ? newMeeting.participants
+          : Array.isArray(newMeeting.participants)
+          ? newMeeting.participants.length
+          : 0) + 1, // +1 for host
+      duration: newMeeting.duration,
+    };
+
+    // Add to the upcoming meetings and sort by time
+    setUpcomingMeetings((prev) => {
+      let updated;
+      if (replaceId) {
+        // Replace the optimistic meeting with the real one
+        updated = prev.map((meeting) =>
+          meeting.id === replaceId ? formattedMeeting : meeting
+        );
+      } else {
+        // Add new meeting
+        updated = [...prev, formattedMeeting];
+      }
+      return updated.sort(
+        (a, b) =>
+          new Date(a.scheduledTime).getTime() -
+          new Date(b.scheduledTime).getTime()
+      );
+    });
+  };
+
+  const updateMeeting = async (
+    meetingId: string,
+    updates: MeetingUpdateData
+  ) => {
+    setIsUpdatingMeeting(true);
+
+    // Optimistic update - update UI immediately
+    const originalMeetings = [...upcomingMeetings];
+    setUpcomingMeetings((prev) =>
+      prev.map((meeting) => {
+        if (meeting.id === meetingId) {
+          const updatedMeeting = { ...meeting };
+          if (updates.title) updatedMeeting.title = updates.title;
+          if (updates.scheduledTime) {
+            updatedMeeting.scheduledTime = new Date(updates.scheduledTime);
+            // Update time display
+            const newTime = new Date(updates.scheduledTime);
+            const isToday =
+              newTime.toDateString() === new Date().toDateString();
+            const isTomorrow =
+              newTime.toDateString() ===
+              new Date(Date.now() + 86400000).toDateString();
+
+            if (isToday) {
+              updatedMeeting.time = `${newTime.toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              })} Today`;
+            } else if (isTomorrow) {
+              updatedMeeting.time = `Tomorrow ${newTime.toLocaleTimeString(
+                "en-US",
+                {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                }
+              )}`;
+            } else {
+              updatedMeeting.time = newTime.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              });
+            }
+          }
+          if (updates.duration) updatedMeeting.duration = updates.duration;
+          return updatedMeeting;
+        }
+        return meeting;
+      })
+    );
+
+    try {
+      const response = await axios.put("/api/meetings/update", {
+        id: meetingId,
+        ...updates,
+      });
+      if (response.data.success) {
+        console.log("Meeting updated successfully");
+        setEditingMeeting(null); // Close the dialog
+      } else {
+        // Revert on error
+        setUpcomingMeetings(originalMeetings);
+        alert(response.data.error || "Failed to update meeting");
+      }
+    } catch (error) {
+      // Revert on error
+      setUpcomingMeetings(originalMeetings);
+      console.error("Error updating meeting:", error);
+      alert("Failed to update meeting");
+    } finally {
+      setIsUpdatingMeeting(false);
+    }
+  };
+
   if (status === "loading") {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
@@ -211,15 +414,33 @@ export default function DashboardLayout({
         />
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col">{children}</div>
+        <div className="flex-1 flex flex-col">
+          <DashboardProvider
+            addNewMeetingToState={addNewMeetingToState}
+            upcomingMeetings={upcomingMeetings}
+          >
+            {children}
+          </DashboardProvider>
+        </div>
 
         {/* Right Sidebar */}
         <SidebarRight
           upcomingMeetings={upcomingMeetings}
           loadingUpcomingMeetings={loadingUpcomingMeetings}
           onMeetingClick={handleMeetingClick}
+          onEditMeeting={handleEditMeeting}
+          onDeleteMeeting={handleDeleteMeeting}
         />
       </div>
+
+      {/* Edit Meeting Dialog */}
+      <EditMeetingDialog
+        meeting={editingMeeting}
+        open={editingMeeting !== null}
+        onClose={() => setEditingMeeting(null)}
+        onSave={updateMeeting}
+        isLoading={isUpdatingMeeting}
+      />
     </motion.div>
   );
 }

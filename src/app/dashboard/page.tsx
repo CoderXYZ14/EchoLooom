@@ -29,12 +29,14 @@ import {
 import { DateTimePicker } from "@/components/ui/datetime-picker";
 
 import { useSession } from "next-auth/react";
+import { useDashboard } from "@/contexts/DashboardContext";
 import axios from "axios";
 
 const GRADIENT_COLORS = ["#00D4FF", "#7C3AED", "#EC4899", "#F59E0B"];
 
 const EchoLoomDashboard = () => {
   const { status } = useSession();
+  const { addNewMeetingToState } = useDashboard();
   const [modalType, setModalType] = useState<
     "join" | "schedule" | "new" | null
   >(null);
@@ -145,8 +147,6 @@ const EchoLoomDashboard = () => {
   };
 
   const scheduleMeeting = async () => {
-    console.log("Schedule meeting called with data:", scheduleData);
-
     if (!scheduleData.title.trim()) {
       alert("Meeting title is required");
       return;
@@ -162,9 +162,25 @@ const EchoLoomDashboard = () => {
       return;
     }
 
-    console.log("All validations passed, proceeding with API call");
-
     setIsSchedulingMeeting(true);
+
+    // Create optimistic meeting object
+    const optimisticId = `temp-${Date.now()}`;
+    const optimisticMeeting = {
+      id: optimisticId,
+      title: scheduleData.title.trim(),
+      scheduledTime: scheduleData.date.toISOString(),
+      duration: parseInt(scheduleData.duration),
+      participants: scheduleData.emails.trim()
+        ? scheduleData.emails.split(",").length
+        : 0,
+      dailyRoomName: `echoloom-${Date.now()}`, // Temporary room name
+    };
+
+    // Add to state immediately for optimistic UI
+    addNewMeetingToState(optimisticMeeting);
+    closeModal(); // Close modal immediately
+
     try {
       const requestData = {
         title: scheduleData.title.trim(),
@@ -173,16 +189,13 @@ const EchoLoomDashboard = () => {
         participantEmails: scheduleData.emails.trim(),
       };
 
-      console.log("Scheduling meeting with data:", requestData);
-
       const response = await axios.post("/api/meetings/schedule", requestData);
 
-      console.log("Schedule response:", response.data);
-
       if (response.data.success) {
-        alert("Meeting scheduled successfully!");
-        closeModal();
-        // Optionally refresh the page or update the upcoming meetings list
+        // Replace the optimistic meeting with real data
+        const realMeeting = response.data.meeting;
+        addNewMeetingToState(realMeeting, optimisticId);
+        console.log("Meeting scheduled successfully!");
       } else {
         alert(response.data.error || "Failed to schedule meeting");
       }
