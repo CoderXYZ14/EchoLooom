@@ -1,13 +1,4 @@
-export const SOCIAL_LINKS = {
-  twitter: "https://x.com/coderxyz14",
-  github: "https://github.com/CoderXYZ14",
-  linkedin: "https://www.linkedin.com/in/shahwaiz-islam/",
-  email: "mailto:shahwaizislam1404@gmail.com",
-  calendly: "https://calendly.com/shahwaizislam1404/30min",
-} as const;
-
-export const LOGO_LINKS = {
-  logo: `<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <radialGradient id="innerGlow" cx="50%" cy="50%" r="50%">
       <stop offset="0%" stop-color="#ffffff" />
@@ -21,5 +12,5 @@ export const LOGO_LINKS = {
   </defs>
   <circle cx="50" cy="50" r="40" fill="url(#ringGradient)" />
   <circle cx="50" cy="50" r="25" fill="url(#innerGlow)" />
-</svg>`,
-} as const;
+</svg>
+
