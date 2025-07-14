@@ -36,9 +36,16 @@ import { useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 
+interface GuestUser {
+  name: string;
+  email: string;
+  isGuest: true;
+}
+
 interface DailyMeetingProps {
   roomUrl: string;
   onLeave: () => void;
+  guestUser?: GuestUser | null;
 }
 
 const VideoTile = ({
@@ -64,9 +71,9 @@ const VideoTile = ({
 
   if (!participant) return null;
 
-  const displayName =
-    participant.user_name ||
-    (isLocal ? "You" : `Participant ${participantId.slice(-4)}`);
+  const displayName = isLocal
+    ? "You"
+    : participant.user_name || `Participant ${participantId.slice(-4)}`;
 
   // Get user info for avatar
   const userImage = isLocal ? session?.user?.image : null;
@@ -145,7 +152,6 @@ const VideoTile = ({
 const ScreenShareTile = ({ participantId }: { participantId: string }) => {
   const participant = useParticipant(participantId);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const { data: session } = useSession();
 
   useEffect(() => {
     if (videoRef.current && participant?.tracks?.screenVideo?.persistentTrack) {
@@ -160,7 +166,7 @@ const ScreenShareTile = ({ participantId }: { participantId: string }) => {
   // Get proper display name - use session data for local participant
   const isLocalParticipant = participant.local;
   const displayName = isLocalParticipant
-    ? session?.user?.name || "You"
+    ? "You"
     : participant.user_name || `Participant ${participantId.slice(-4)}`;
 
   return (
@@ -183,13 +189,20 @@ const ScreenShareTile = ({ participantId }: { participantId: string }) => {
   );
 };
 
-const DailyMeeting: React.FC<DailyMeetingProps> = ({ roomUrl, onLeave }) => {
+const DailyMeeting: React.FC<DailyMeetingProps> = ({
+  roomUrl,
+  onLeave,
+  guestUser,
+}) => {
   const daily = useDaily();
   const participantIds = useParticipantIds();
   const localParticipant = useLocalParticipant();
   const { screens } = useScreenShare();
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
+
+  // Use either session user or guest user
+  const currentUser = session?.user || guestUser;
 
   const [isJoining, setIsJoining] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -244,24 +257,67 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({ roomUrl, onLeave }) => {
       if (!daily || hasJoinedRef.current) return;
 
       try {
-        console.log("Attempting to join meeting...");
+        console.log("Attempting to join meeting with URL:", roomUrl);
+        console.log("Daily instance ready:", !!daily);
         setIsJoining(true);
         setError(null);
         hasJoinedRef.current = true;
 
-        await daily.join({ url: roomUrl });
+        // Get user name from session or guest user
+        const userName = currentUser?.name || "Guest";
+        console.log("Joining as user:", userName);
+        console.log("User info:", {
+          name: currentUser?.name,
+          email: currentUser?.email,
+          isGuest: (currentUser as GuestUser)?.isGuest,
+        });
+
+        console.log("Calling daily.join() with:", { url: roomUrl, userName });
+        await daily.join({
+          url: roomUrl,
+          userName: userName,
+        });
         console.log("Successfully joined meeting");
         setIsJoining(false);
       } catch (error) {
         console.error("Failed to join meeting:", error);
-        setError("Failed to join meeting. Please try again.");
+        console.error("Error details:", {
+          message: error instanceof Error ? error.message : "Unknown error",
+          roomUrl,
+          userName: currentUser?.name || "Guest",
+        });
+
+        // Add more specific error handling
+        let errorMessage = "Failed to join meeting. Please try again.";
+        if (error instanceof Error) {
+          if (
+            error.message.includes("Invalid room") ||
+            error.message.includes("room")
+          ) {
+            errorMessage = "This meeting room doesn't exist or has expired.";
+          } else if (
+            error.message.includes("Network") ||
+            error.message.includes("network")
+          ) {
+            errorMessage = "Network error. Please check your connection.";
+          } else if (
+            error.message.includes("token") ||
+            error.message.includes("auth")
+          ) {
+            errorMessage =
+              "Authentication error. Please try refreshing the page.";
+          } else {
+            errorMessage = `Meeting error: ${error.message}`;
+          }
+        }
+        setError(errorMessage);
         setIsJoining(false);
         hasJoinedRef.current = false;
       }
     };
 
     joinMeeting();
-  }, [daily, roomUrl]);
+  }, [daily, roomUrl, currentUser]);
 
   const toggleAudio = async () => {
     if (!daily) return;
@@ -362,23 +418,54 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({ roomUrl, onLeave }) => {
           style={{ background: backgroundGradient }}
           className="absolute inset-0"
         />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-destructive/5 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-primary/5 via-transparent to-transparent" />
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
           className="relative z-10 flex items-center justify-center min-h-screen"
         >
-          <div className="text-center bg-gradient-to-br from-card via-card to-muted/20 border border-border/60 rounded-xl p-8 shadow-lg max-w-md mx-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-destructive/10 via-destructive/5 to-transparent rounded-full flex items-center justify-center mx-auto mb-4">
-              <Phone className="w-8 h-8 text-destructive" />
-            </div>
-            <h2 className="text-xl font-bold text-foreground mb-2">
-              Connection Error
+          <div className="text-center max-w-md">
+            <motion.div
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="w-16 h-16 border-4 border-red-500 rounded-full flex items-center justify-center mx-auto mb-6"
+            >
+              <span className="text-red-500 text-2xl">✕</span>
+            </motion.div>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent mb-4">
+              Unable to Join Meeting
             </h2>
-            <p className="text-muted-foreground mb-6">{error}</p>
-            <Button onClick={onLeave} variant="outline" className="w-full">
-              Back to Dashboard
-            </Button>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <div className="text-xs text-muted-foreground mb-6 p-3 bg-muted/20 rounded-lg">
+              <p>
+                <strong>Room URL:</strong> {roomUrl}
+              </p>
+              <p>
+                <strong>User:</strong> {currentUser?.name || "Unknown"}
+              </p>
+              <p>
+                <strong>Email:</strong> {currentUser?.email || "Unknown"}
+              </p>
+            </div>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => {
+                  setError(null);
+                  hasJoinedRef.current = false;
+                  // Trigger rejoin attempt
+                  window.location.reload();
+                }}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Try Again
+              </button>
+              <button
+                onClick={onLeave}
+                className="px-4 py-2 bg-muted text-muted-foreground rounded-lg hover:bg-muted/80 transition-colors"
+              >
+                Leave
+              </button>
+            </div>
           </div>
         </motion.div>
       </div>

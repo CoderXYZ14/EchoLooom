@@ -145,6 +145,8 @@ const EchoLoomDashboard = () => {
   };
 
   const scheduleMeeting = async () => {
+    console.log("Schedule meeting called with data:", scheduleData);
+
     if (!scheduleData.title.trim()) {
       alert("Meeting title is required");
       return;
@@ -160,14 +162,22 @@ const EchoLoomDashboard = () => {
       return;
     }
 
+    console.log("All validations passed, proceeding with API call");
+
     setIsSchedulingMeeting(true);
     try {
-      const response = await axios.post("/api/meetings/schedule", {
+      const requestData = {
         title: scheduleData.title.trim(),
         scheduledTime: scheduleData.date.toISOString(),
         duration: parseInt(scheduleData.duration),
         participantEmails: scheduleData.emails.trim(),
-      });
+      };
+
+      console.log("Scheduling meeting with data:", requestData);
+
+      const response = await axios.post("/api/meetings/schedule", requestData);
+
+      console.log("Schedule response:", response.data);
 
       if (response.data.success) {
         alert("Meeting scheduled successfully!");
@@ -178,7 +188,11 @@ const EchoLoomDashboard = () => {
       }
     } catch (error: unknown) {
       console.error("Error scheduling meeting:", error);
-      alert("Failed to schedule meeting");
+      if (error instanceof Error) {
+        alert(`Failed to schedule meeting: ${error.message}`);
+      } else {
+        alert("Failed to schedule meeting");
+      }
     } finally {
       setIsSchedulingMeeting(false);
     }
@@ -353,7 +367,7 @@ const EchoLoomDashboard = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="emails">Participant Emails</Label>
+              <Label htmlFor="emails">Participant Emails (Optional)</Label>
               <Input
                 id="emails"
                 value={scheduleData.emails}
@@ -363,9 +377,12 @@ const EchoLoomDashboard = () => {
                     emails: e.target.value,
                   }))
                 }
-                placeholder="email1@example.com, email2@example.com"
+                placeholder="email1@example.com, email2@example.com (optional)"
                 className="bg-background/50 border-border/50 focus:border-primary"
               />
+              <p className="text-xs text-muted-foreground">
+                Leave empty to create a meeting without inviting participants
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="duration">Duration</Label>

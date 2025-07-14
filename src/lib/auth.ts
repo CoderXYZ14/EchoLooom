@@ -2,6 +2,7 @@ import { NextAuthOptions, getServerSession } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import dbConnect from "./db";
 import UserModel from "@/models/User";
+import mongoose from "mongoose";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -30,21 +31,40 @@ export const authOptions: NextAuthOptions = {
               meetings: [],
             });
           } else if (existingUser && account.providerAccountId) {
-            // Update existing user with Google info if they don't have it
-            // This handles the case where user was created from meeting invitation
+            // ACCOUNT MERGING: Update existing user with Google info
+            // This handles the case where user was created as guest or from meeting invitation
+
+            let updated = false;
+
+            // Add Google ID if not present (guest user upgrading to full account)
             if (!existingUser.googleId) {
               existingUser.googleId = account.providerAccountId;
+              updated = true;
             }
+
+            // Update profile image if not present
             if (!existingUser.image && user.image) {
               existingUser.image = user.image;
+              updated = true;
             }
+
+            // Update name if it's generic (email prefix) or empty
             if (
               !existingUser.name ||
-              existingUser.name === user.email.split("@")[0]
+              existingUser.name === user.email.split("@")[0] ||
+              (user.name && user.name !== existingUser.name)
             ) {
               existingUser.name = user.name || existingUser.name;
+              updated = true;
             }
-            await existingUser.save();
+
+            // Save if any updates were made
+            if (updated) {
+              await existingUser.save();
+              console.log(
+                `Account merged for ${user.email}: Guest -> Google Account`
+              );
+            }
           }
 
           return true;
@@ -55,31 +75,42 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
+    async jwt({ token, user }) {
+      if (user) {
+        try {
+          await dbConnect();
+          const dbUser = await UserModel.findOne({ email: user.email });
+          if (dbUser) {
+            token.id = (dbUser._id as mongoose.Types.ObjectId).toString();
+          }
+        } catch (error) {
+          console.error("JWT callback error:", error);
+        }
+      }
+      return token;
+    },
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.sub!;
-        session.user.googleId = token.googleId as string;
-
-        // Fetch user from database to get the most up-to-date info
+      if (token?.id) {
+        session.user.id = token.id as string;
+      } else if (session.user?.email) {
+        // Fallback: fetch user ID from database if not in token
         try {
           await dbConnect();
           const dbUser = await UserModel.findOne({ email: session.user.email });
           if (dbUser) {
-            session.user.id = (dbUser._id as unknown as string).toString();
-            session.user.googleId = dbUser.googleId || "";
+            session.user.id = (
+              dbUser._id as mongoose.Types.ObjectId
+            ).toString();
           }
         } catch (error) {
-          console.error("Error fetching user in session:", error);
+          console.error("Error fetching user ID in session:", error);
         }
       }
       return session;
     },
-    async jwt({ token, account }) {
-      if (account?.provider === "google") {
-        token.googleId = account.providerAccountId;
-      }
-      return token;
-    },
+  },
+  pages: {
+    signIn: "/signin",
   },
 };
 

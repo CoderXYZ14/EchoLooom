@@ -28,6 +28,10 @@ interface UpcomingMeeting {
   title: string;
   time: string;
   participants: number;
+  scheduledTime: Date;
+  dailyRoomName: string;
+  isHost: boolean;
+  duration: number;
 }
 
 const GRADIENT_COLORS = ["#00D4FF", "#7C3AED", "#EC4899", "#F59E0B"];
@@ -40,8 +44,20 @@ export default function DashboardLayout({
   const { status } = useSession();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [pastMeetings, setPastMeetings] = useState<MeetingHistoryItem[]>([]);
+  const [upcomingMeetings, setUpcomingMeetings] = useState<UpcomingMeeting[]>(
+    []
+  );
   const [loadingPastMeetings, setLoadingPastMeetings] = useState(true);
+  const [loadingUpcomingMeetings, setLoadingUpcomingMeetings] = useState(true);
   const color = useMotionValue(GRADIENT_COLORS[0]);
+
+  // Meeting status interface
+  interface MeetingStatus {
+    isLive: boolean;
+    isUpcoming: boolean;
+    hasEnded: boolean;
+    startsWithin15Min: boolean;
+  }
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -60,6 +76,7 @@ export default function DashboardLayout({
 
   useEffect(() => {
     fetchPastMeetings();
+    fetchUpcomingMeetings();
   }, []);
 
   const fetchPastMeetings = async () => {
@@ -76,28 +93,83 @@ export default function DashboardLayout({
     }
   };
 
+  const fetchUpcomingMeetings = async () => {
+    try {
+      setLoadingUpcomingMeetings(true);
+      const response = await axios.get("/api/meetings/upcoming");
+      if (response.data.success) {
+        setUpcomingMeetings(response.data.meetings);
+      }
+    } catch (error) {
+      console.error("Error fetching upcoming meetings:", error);
+    } finally {
+      setLoadingUpcomingMeetings(false);
+    }
+  };
+
   const backgroundGradient = useMotionTemplate`radial-gradient(circle at 50% 50%, ${color}15 0%, transparent 50%)`;
   const glowEffect = useMotionTemplate`0 0 20px ${color}40`;
 
-  // Hardcoded upcoming meetings for now
-  const upcomingMeetings: UpcomingMeeting[] = [
-    {
-      id: "1",
-      title: "Weekly Planning",
-      time: "3:00 PM Today",
-      participants: 5,
-    },
-    {
-      id: "2",
-      title: "Client Presentation",
-      time: "Tomorrow 10:00 AM",
-      participants: 8,
-    },
-  ];
+  const handleMeetingClick = (
+    meeting: UpcomingMeeting,
+    status: MeetingStatus
+  ) => {
+    const now = new Date();
+    const meetingStart = new Date(meeting.scheduledTime);
+    const meetingEnd = new Date(
+      meetingStart.getTime() + meeting.duration * 60000
+    );
 
-  const handleScheduleMeeting = () => {
-    // This will be handled by individual pages
-    console.log("Schedule meeting clicked");
+    // Only prevent joining if meeting has ended
+    if (status.hasEnded) {
+      alert(
+        `This meeting has ended. It was scheduled for ${meetingStart.toLocaleString()} and ended at ${meetingEnd.toLocaleString()}.`
+      );
+      return;
+    }
+
+    // Allow joining for all other cases - live, starting soon, or upcoming
+    // Just show appropriate confirmation messages
+
+    if (status.isLive) {
+      // Meeting is live - join immediately
+      window.open(`/meeting/${meeting.dailyRoomName}`, "_blank");
+      return;
+    }
+
+    if (status.startsWithin15Min) {
+      // Meeting starting soon - confirm and join
+      if (
+        confirm(
+          `Meeting "${
+            meeting.title
+          }" is starting soon at ${meetingStart.toLocaleString()}. Would you like to join now?`
+        )
+      ) {
+        window.open(`/meeting/${meeting.dailyRoomName}`, "_blank");
+      }
+      return;
+    }
+
+    if (status.isUpcoming) {
+      // Meeting is upcoming - confirm and allow early join
+      const timeUntilStart = Math.ceil(
+        (meetingStart.getTime() - now.getTime()) / (1000 * 60)
+      );
+      if (
+        confirm(
+          `Meeting "${
+            meeting.title
+          }" is scheduled to start in ${timeUntilStart} minutes at ${meetingStart.toLocaleString()}. Would you like to join early?`
+        )
+      ) {
+        window.open(`/meeting/${meeting.dailyRoomName}`, "_blank");
+      }
+      return;
+    }
+
+    // Fallback - join anyway
+    window.open(`/meeting/${meeting.dailyRoomName}`, "_blank");
   };
 
   if (status === "loading") {
@@ -144,7 +216,8 @@ export default function DashboardLayout({
         {/* Right Sidebar */}
         <SidebarRight
           upcomingMeetings={upcomingMeetings}
-          onScheduleMeeting={handleScheduleMeeting}
+          loadingUpcomingMeetings={loadingUpcomingMeetings}
+          onMeetingClick={handleMeetingClick}
         />
       </div>
     </motion.div>

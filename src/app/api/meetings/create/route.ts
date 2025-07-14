@@ -58,7 +58,11 @@ export async function POST(req: NextRequest) {
           dailyRoomName: meeting.dailyRoomName,
           scheduledTime: meeting.scheduledTime,
           duration: meeting.duration,
-          roomUrl: `https://${process.env.DAILY_SUBDOMAIN}.daily.co/${meeting.dailyRoomName}`,
+          roomUrl: `https://${
+            process.env.DAILY_SUBDOMAIN ||
+            process.env.NEXT_PUBLIC_DAILY_SUBDOMAIN ||
+            "echoloom"
+          }.daily.co/${meeting.dailyRoomName}`,
         },
       },
       { status: 201 }
