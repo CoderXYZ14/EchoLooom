@@ -6,7 +6,10 @@ import {
   useMotionTemplate,
   useMotionValue,
   animate,
+  AnimatePresence,
 } from "motion/react";
+import { Menu, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import SidebarLeft from "@/components/SidebarLeft";
 import SidebarRight from "@/components/SidebarRight";
 import { EditMeetingDialog } from "@/components/EditMeetingDialog";
@@ -52,7 +55,6 @@ interface MeetingUpdateData {
   title?: string;
   scheduledTime?: string;
   duration?: number;
-  participantEmails?: string;
 }
 
 const GRADIENT_COLORS = ["#00D4FF", "#7C3AED", "#EC4899", "#F59E0B"];
@@ -74,6 +76,9 @@ export default function DashboardLayout({
     null
   );
   const [isUpdatingMeeting, setIsUpdatingMeeting] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showLeftSidebar, setShowLeftSidebar] = useState(false);
+  const [showRightSidebar, setShowRightSidebar] = useState(false);
   const color = useMotionValue(GRADIENT_COLORS[0]);
 
   // Meeting status interface
@@ -98,6 +103,24 @@ export default function DashboardLayout({
 
     return () => clearInterval(timer);
   }, [color]);
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      const isMobileDevice = window.innerWidth < 1024; // lg breakpoint
+      setIsMobile(isMobileDevice);
+
+      // Close sidebars when switching to mobile
+      if (isMobileDevice) {
+        setShowLeftSidebar(false);
+        setShowRightSidebar(false);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   useEffect(() => {
     fetchPastMeetings();
@@ -410,20 +433,112 @@ export default function DashboardLayout({
 
   return (
     <motion.div
-      className="h-screen overflow-hidden bg-background text-foreground flex"
+      className="h-screen overflow-hidden bg-background text-foreground flex relative"
       style={{ backgroundImage: backgroundGradient }}
     >
+      {/* Mobile Header */}
+      {isMobile && (
+        <motion.div
+          className="absolute top-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-sm border-b border-border/60 p-4"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                <motion.div
+                  className="w-4 h-4 rounded-full bg-white"
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    opacity: [0.8, 1, 0.8],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                />
+              </div>
+              <span className="text-lg font-bold">EchoLoom</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowLeftSidebar(!showLeftSidebar)}
+                className="p-2"
+                title="Toggle Left Sidebar"
+              >
+                <Menu className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowRightSidebar(!showRightSidebar)}
+                className="p-2"
+                title="Toggle Right Sidebar"
+              >
+                <Menu className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Mobile Overlay for Left Sidebar */}
+      <AnimatePresence>
+        {isMobile && showLeftSidebar && (
+          <motion.div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-45"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowLeftSidebar(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Overlay for Right Sidebar */}
+      <AnimatePresence>
+        {isMobile && showRightSidebar && (
+          <motion.div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-45"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowRightSidebar(false)}
+          />
+        )}
+      </AnimatePresence>
+
       <div className="flex flex-1 h-full">
         {/* Left Sidebar */}
-        <SidebarLeft
-          currentTime={currentTime}
-          pastMeetings={pastMeetings}
-          glowEffect={glowEffect}
-          loadingPastMeetings={loadingPastMeetings}
-        />
+        <AnimatePresence>
+          {(!isMobile || showLeftSidebar) && (
+            <motion.div
+              className={`${
+                isMobile ? "fixed left-0 top-0 bottom-0 z-50 w-80" : "relative"
+              }`}
+              initial={isMobile ? { x: -320 } : undefined}
+              animate={isMobile ? { x: 0 } : undefined}
+              exit={isMobile ? { x: -320 } : undefined}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            >
+              <SidebarLeft
+                currentTime={currentTime}
+                pastMeetings={pastMeetings}
+                glowEffect={glowEffect}
+                loadingPastMeetings={loadingPastMeetings}
+                isMobile={isMobile}
+                onClose={() => setShowLeftSidebar(false)}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col">
+        <div className={`flex-1 flex flex-col ${isMobile ? "pt-20" : ""}`}>
           <DashboardProvider
             addNewMeetingToState={addNewMeetingToState}
             upcomingMeetings={upcomingMeetings}
@@ -435,13 +550,39 @@ export default function DashboardLayout({
         </div>
 
         {/* Right Sidebar */}
-        <SidebarRight
-          upcomingMeetings={upcomingMeetings}
-          loadingUpcomingMeetings={loadingUpcomingMeetings}
-          onMeetingClick={handleMeetingClick}
-          onEditMeeting={handleEditMeeting}
-          onDeleteMeeting={handleDeleteMeeting}
-        />
+        <AnimatePresence>
+          {(!isMobile || showRightSidebar) && (
+            <motion.div
+              className={`${
+                isMobile ? "fixed right-0 top-0 bottom-0 z-50 w-80" : "relative"
+              }`}
+              initial={isMobile ? { x: 320 } : undefined}
+              animate={isMobile ? { x: 0 } : undefined}
+              exit={isMobile ? { x: 320 } : undefined}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            >
+              {isMobile && (
+                <div className="absolute top-4 left-4 z-10">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowRightSidebar(false)}
+                    className="p-2"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+              <SidebarRight
+                upcomingMeetings={upcomingMeetings}
+                loadingUpcomingMeetings={loadingUpcomingMeetings}
+                onMeetingClick={handleMeetingClick}
+                onEditMeeting={handleEditMeeting}
+                onDeleteMeeting={handleDeleteMeeting}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Edit Meeting Dialog */}

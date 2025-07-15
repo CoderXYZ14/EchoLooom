@@ -57,18 +57,12 @@ const EchoLoomDashboard = () => {
   const color = useMotionValue(GRADIENT_COLORS[0]);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      // setCurrentTime(new Date()); // This line was removed
-    }, 1000);
-
     animate(color, GRADIENT_COLORS, {
       ease: "easeInOut",
       duration: 8,
       repeat: Infinity,
       repeatType: "mirror",
     });
-
-    return () => clearInterval(timer);
   }, [color]);
 
   const backgroundGradient = useMotionTemplate`radial-gradient(circle at 50% 50%, ${color}15 0%, transparent 50%)`;
@@ -80,7 +74,6 @@ const EchoLoomDashboard = () => {
     setMeetingCode("");
     setScheduleData({ title: "", date: undefined, emails: "", duration: "30" });
     setNewMeetingTitle("");
-    // Reset loading states
     setIsCreatingMeeting(false);
     setIsSchedulingMeeting(false);
     setIsJoiningMeeting(false);
@@ -106,7 +99,6 @@ const EchoLoomDashboard = () => {
 
     setIsJoiningMeeting(true);
     try {
-      // Redirect to our custom meeting room
       const roomName = meetingCode.trim();
       window.open(`/meeting/${roomName}`, "_blank");
       closeModal();
@@ -128,11 +120,10 @@ const EchoLoomDashboard = () => {
     try {
       const response = await axios.post("/api/meetings/create", {
         title: newMeetingTitle.trim(),
-        duration: 60, // Default 1 hour
+        duration: 60,
       });
 
       if (response.data.success) {
-        // Redirect to our custom meeting room instead of Daily.co domain
         const roomName = response.data.meeting.dailyRoomName;
         window.open(`/meeting/${roomName}`, "_blank");
         closeModal();
@@ -154,59 +145,34 @@ const EchoLoomDashboard = () => {
     }
 
     if (!scheduleData.date) {
-      toast.error("Meeting date and time is required");
-      return;
-    }
-
-    if (!scheduleData.duration) {
-      toast.error("Meeting duration is required");
+      toast.error("Meeting date and time are required");
       return;
     }
 
     setIsSchedulingMeeting(true);
-
-    // Create optimistic meeting object
-    const optimisticId = `temp-${Date.now()}`;
-    const optimisticMeeting = {
-      id: optimisticId,
-      title: scheduleData.title.trim(),
-      scheduledTime: scheduleData.date.toISOString(),
-      duration: parseInt(scheduleData.duration),
-      participants: scheduleData.emails.trim()
-        ? scheduleData.emails.split(",").length
-        : 0,
-      dailyRoomName: `echoloom-${Date.now()}`, // Temporary room name
-    };
-
-    // Add to state immediately for optimistic UI
-    addNewMeetingToState(optimisticMeeting);
-    closeModal(); // Close modal immediately
-
     try {
-      const requestData = {
+      const participants = scheduleData.emails
+        .split(",")
+        .map((email) => email.trim())
+        .filter((email) => email.length > 0);
+
+      const response = await axios.post("/api/meetings/schedule", {
         title: scheduleData.title.trim(),
         scheduledTime: scheduleData.date.toISOString(),
         duration: parseInt(scheduleData.duration),
-        participantEmails: scheduleData.emails.trim(),
-      };
-
-      const response = await axios.post("/api/meetings/schedule", requestData);
+        participants,
+      });
 
       if (response.data.success) {
-        // Replace the optimistic meeting with real data
-        const realMeeting = response.data.meeting;
-        addNewMeetingToState(realMeeting, optimisticId);
-        console.log("Meeting scheduled successfully!");
+        addNewMeetingToState(response.data.meeting);
+        toast.success("Meeting scheduled successfully");
+        closeModal();
       } else {
         toast.error(response.data.error || "Failed to schedule meeting");
       }
-    } catch (error: unknown) {
+    } catch (error) {
       console.error("Error scheduling meeting:", error);
-      if (error instanceof Error) {
-        toast.error(`Failed to schedule meeting: ${error.message}`);
-      } else {
-        toast.error("Failed to schedule meeting");
-      }
+      toast.error("Failed to schedule meeting");
     } finally {
       setIsSchedulingMeeting(false);
     }
@@ -222,38 +188,30 @@ const EchoLoomDashboard = () => {
     label: string;
     color: string;
     onClick?: () => void;
-  }) => (
-    <motion.div
-      whileHover={{ scale: 1.02, y: -2 }}
-      whileTap={{ scale: 0.98 }}
-      className="group cursor-pointer"
-      onClick={onClick}
-    >
-      <Card className="relative overflow-hidden bg-card/50 backdrop-blur-md border-border/50 hover:border-border transition-all duration-300 h-20">
-        <motion.div
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-          style={{
-            background: `linear-gradient(135deg, ${color}10, transparent)`,
-          }}
-        />
-        <div className="relative h-full flex items-center justify-center text-center space-x-3">
-          <motion.div
-            className="p-2 rounded-lg"
-            style={{
-              backgroundColor: color,
-              boxShadow: glowEffect,
-            }}
-            whileHover={{ rotate: 5 }}
-          >
-            <Icon className="w-5 h-5 text-white" />
-          </motion.div>
-          <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-            {label}
-          </h3>
-        </div>
-      </Card>
-    </motion.div>
-  );
+  }) => {
+    return (
+      <motion.div
+        whileHover={{ scale: 1.02, y: -2 }}
+        whileTap={{ scale: 0.98 }}
+        className="group cursor-pointer"
+        onClick={onClick}
+      >
+        <Card className="relative overflow-hidden bg-card/50 backdrop-blur-md border-border/50 hover:border-border transition-all duration-300 h-20">
+          <div className="relative h-full flex items-center justify-center text-center space-x-3">
+            <div
+              className="p-2 rounded-lg shadow-lg"
+              style={{ background: color }}
+            >
+              <Icon className="w-6 h-6 text-white drop-shadow-md" />
+            </div>
+            <h3 className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+              {label}
+            </h3>
+          </div>
+        </Card>
+      </motion.div>
+    );
+  };
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -313,13 +271,13 @@ const EchoLoomDashboard = () => {
                   placeholder="Enter Meeting Code"
                   value={meetingCode}
                   onChange={(e) => setMeetingCode(e.target.value)}
-                  className="w-64 bg-background/50 border-border/50 focus:border-primary"
+                  className="w-64 bg-background/50 border-border/50 focus:border-cyan-500/50 focus:ring-cyan-500/20"
                   autoFocus
                 />
                 <Button
                   onClick={joinMeeting}
                   disabled={isJoiningMeeting}
-                  className="bg-primary hover:bg-primary/90"
+                  className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   {isJoiningMeeting ? (
                     <div className="flex items-center gap-2">
@@ -368,7 +326,7 @@ const EchoLoomDashboard = () => {
                   }))
                 }
                 placeholder="Enter meeting title"
-                className="bg-background/50 border-border/50 focus:border-primary"
+                className="bg-background/50 border-border/50 focus:border-cyan-500/50 focus:ring-cyan-500/20"
               />
             </div>
             <div className="space-y-2">
@@ -391,8 +349,8 @@ const EchoLoomDashboard = () => {
                     emails: e.target.value,
                   }))
                 }
-                placeholder="email1@example.com, email2@example.com (optional)"
-                className="bg-background/50 border-border/50 focus:border-primary"
+                placeholder="email1@example.com, email2@example.com"
+                className="bg-background/50 border-border/50 focus:border-cyan-500/50 focus:ring-cyan-500/20"
               />
               <p className="text-xs text-muted-foreground">
                 Leave empty to create a meeting without inviting participants
@@ -419,7 +377,7 @@ const EchoLoomDashboard = () => {
               </Select>
             </div>
             <Button
-              className="w-full bg-primary hover:bg-primary/90 mt-6"
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 mt-6"
               onClick={scheduleMeeting}
               disabled={isSchedulingMeeting}
             >
@@ -460,11 +418,11 @@ const EchoLoomDashboard = () => {
                 value={newMeetingTitle}
                 onChange={(e) => setNewMeetingTitle(e.target.value)}
                 placeholder="Enter meeting title"
-                className="bg-background/50 border-border/50 focus:border-primary"
+                className="bg-background/50 border-border/50 focus:border-cyan-500/50 focus:ring-cyan-500/20"
               />
             </div>
             <Button
-              className="w-full bg-primary hover:bg-primary/90 mt-6"
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 mt-6"
               onClick={createInstantMeeting}
               disabled={isCreatingMeeting}
             >

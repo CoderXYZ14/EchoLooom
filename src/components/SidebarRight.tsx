@@ -50,6 +50,7 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
       window.open(`/meeting/${meeting.dailyRoomName}`, "_blank");
     }
   };
+
   return (
     <motion.div
       className="w-72 p-4 border-l border-border/50 backdrop-blur-md bg-card/30 flex flex-col"
