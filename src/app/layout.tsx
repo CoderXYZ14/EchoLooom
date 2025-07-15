@@ -67,7 +67,7 @@ export const metadata: Metadata = {
     title: "EchoLoom — Smarter Video Calls with Personal Audio Control",
     description:
       "Meet. Control. Focus. EchoLoom gives you full control over your video calls — from volume sliders to in-meet chat and more.",
-    images: ["/og-cover.png"],
+
     creator: "@coderxyz14",
   },
   robots: {
@@ -91,6 +91,9 @@ export const metadata: Metadata = {
     shortcut: "/favicon.svg",
   },
   authors: [{ name: "Shahwaiz Islam" }],
+  alternates: {
+    canonical: "https://echoloom.live/",
+  },
 };
 
 export default function RootLayout({
@@ -102,6 +105,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.svg" />
+        <link rel="canonical" href="https://echoloom.live" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
