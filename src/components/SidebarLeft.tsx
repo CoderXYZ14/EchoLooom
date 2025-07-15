@@ -2,11 +2,12 @@
 
 import React from "react";
 import { motion, MotionValue } from "motion/react";
-import { Clock, ChevronRight, Play, Settings, LogOut } from "lucide-react";
+import { Clock, ChevronRight, Play, LogOut, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { useSession, signOut } from "next-auth/react";
+import { useTheme } from "next-themes";
 import Link from "next/link";
 
 interface MeetingHistoryItem {
@@ -33,6 +34,7 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({
   loadingPastMeetings,
 }) => {
   const { data: session } = useSession();
+  const { theme, setTheme } = useTheme();
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("en-US", {
@@ -52,6 +54,10 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({
 
   const handleSignOut = () => {
     signOut({ callbackUrl: "/" });
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
   };
 
   return (
@@ -196,8 +202,17 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({
           </div>
         </div>
         <div className="flex space-x-1">
-          <Button variant="ghost" size="icon" className="w-8 h-8">
-            <Settings className="w-4 h-4" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-8 h-8"
+            onClick={toggleTheme}
+          >
+            {theme === "dark" ? (
+              <Sun className="w-4 h-4" />
+            ) : (
+              <Moon className="w-4 h-4" />
+            )}
           </Button>
           <Button
             variant="ghost"
