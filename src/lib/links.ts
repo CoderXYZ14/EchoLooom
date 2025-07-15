@@ -29,3 +29,5 @@ export const LOGO_LINKS = {
   <circle cx="50" cy="50" r="25" fill="url(#innerGlow)" />
 </svg>`,
 } as const;
+
+export const LOGO_URL = "https://copper-sephira-43.tiiny.site/echoloom.png";

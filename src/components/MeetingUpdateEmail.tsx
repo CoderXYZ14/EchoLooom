@@ -13,6 +13,7 @@ import {
   Section,
   Button,
 } from "@react-email/components";
+import { LOGO_URL } from "@/lib/links";
 
 interface MeetingUpdateEmailProps {
   participantName: string;
@@ -102,13 +103,13 @@ export const MeetingUpdateEmail = ({
             {/* Header with Logo */}
             <Section className="text-center mb-8">
               <Img
-                src="https://tan-ebony-93.tiiny.site/favicon.svg"
+                src={LOGO_URL}
                 alt="EchoLoom Logo"
                 width="60"
                 height="60"
                 className="mx-auto mb-1"
               />
-              <Text className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-cyan-600 bg-clip-text text-transparent mb-0">
+              <Text className="text-2xl font-bold text-black mb-0">
                 EchoLoom
               </Text>
             </Section>
@@ -133,7 +134,7 @@ export const MeetingUpdateEmail = ({
                 <Text className="font-semibold text-blue-800 text-[14px] mb-2">
                   📝 What changed:
                 </Text>
-                <ul className="text-blue-700 text-[14px] leading-[20px] space-y-1 list-disc list-inside mb-0">
+                <ul className="text-blue-700 text-[14px] leading-[20px] list-disc list-inside mb-0">
                   {changedFields.includes("title") && <li>Meeting title</li>}
                   {changedFields.includes("scheduledTime") && (
                     <li>Meeting time</li>
@@ -151,8 +152,8 @@ export const MeetingUpdateEmail = ({
                 {meetingTitle}
               </Text>
 
-              <div className="space-y-3">
-                <div className="flex items-center">
+              <div>
+                <div className="flex items-center mb-3">
                   <Text className="font-semibold text-gray-700 text-[14px] w-20 mb-0">
                     Date:
                   </Text>
@@ -161,7 +162,7 @@ export const MeetingUpdateEmail = ({
                   </Text>
                 </div>
 
-                <div className="flex items-center">
+                <div className="flex items-center mb-3">
                   <Text className="font-semibold text-gray-700 text-[14px] w-20 mb-0">
                     Time:
                   </Text>
@@ -170,7 +171,7 @@ export const MeetingUpdateEmail = ({
                   </Text>
                 </div>
 
-                <div className="flex items-center">
+                <div className="flex items-center mb-3">
                   <Text className="font-semibold text-gray-700 text-[14px] w-20 mb-0">
                     Duration:
                   </Text>
@@ -179,7 +180,7 @@ export const MeetingUpdateEmail = ({
                   </Text>
                 </div>
 
-                <div className="flex items-center">
+                <div className="flex items-center mb-3">
                   <Text className="font-semibold text-gray-700 text-[14px] w-20 mb-0">
                     Host:
                   </Text>
@@ -229,10 +230,11 @@ export const MeetingUpdateEmail = ({
                 <tr className="w-full">
                   <td align="center">
                     <Img
-                      src="https://tan-ebony-93.tiiny.site/favicon.svg"
+                      src={LOGO_URL}
                       alt="EchoLoom Logo"
                       width="42"
                       height="42"
+                      className="mx-auto mb-1"
                     />
                   </td>
                 </tr>

@@ -150,16 +150,11 @@ const EchoLoomDashboard = () => {
 
     setIsSchedulingMeeting(true);
     try {
-      const participants = scheduleData.emails
-        .split(",")
-        .map((email) => email.trim())
-        .filter((email) => email.length > 0);
-
       const response = await axios.post("/api/meetings/schedule", {
         title: scheduleData.title.trim(),
         scheduledTime: scheduleData.date.toISOString(),
         duration: parseInt(scheduleData.duration),
-        participants,
+        participantEmails: scheduleData.emails,
       });
 
       if (response.data.success) {

@@ -19,7 +19,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { X, Users, Mail } from "lucide-react";
 import { toast } from "sonner";
+import axios from "axios";
 
 interface UpcomingMeeting {
   id: string;
@@ -30,6 +33,12 @@ interface UpcomingMeeting {
   dailyRoomName: string;
   isHost: boolean;
   duration: number;
+}
+
+interface Participant {
+  email: string;
+  name: string;
+  joined: boolean;
 }
 
 interface MeetingUpdateData {
@@ -61,6 +70,11 @@ export const EditMeetingDialog: React.FC<EditMeetingDialogProps> = ({
     participantEmails: "",
   });
 
+  const [currentParticipants, setCurrentParticipants] = useState<Participant[]>(
+    []
+  );
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
+
   // Reset form when meeting changes
   useEffect(() => {
     if (meeting) {
@@ -68,10 +82,48 @@ export const EditMeetingDialog: React.FC<EditMeetingDialogProps> = ({
         title: meeting.title,
         scheduledTime: new Date(meeting.scheduledTime),
         duration: meeting.duration.toString(),
-        participantEmails: "", // We don't have participant emails in the current meeting object
+        participantEmails: "",
       });
+      fetchMeetingDetails(meeting.id);
     }
   }, [meeting]);
+
+  // Fetch meeting details including participants
+  const fetchMeetingDetails = async (meetingId: string) => {
+    setLoadingParticipants(true);
+    try {
+      const response = await axios.get(`/api/meetings/details?id=${meetingId}`);
+      if (response.data.success) {
+        setCurrentParticipants(response.data.meeting.participants || []);
+        // Set participant emails in form
+        const participantEmails = response.data.meeting.participants
+          .map((p: Participant) => p.email)
+          .join(", ");
+        setFormData((prev) => ({ ...prev, participantEmails }));
+      }
+    } catch (error) {
+      console.error("Error fetching meeting details:", error);
+    } finally {
+      setLoadingParticipants(false);
+    }
+  };
+
+  // Remove participant from the list
+  const removeParticipant = (emailToRemove: string) => {
+    // Update the visual participant list immediately
+    setCurrentParticipants((prev) =>
+      prev.filter((participant) => participant.email !== emailToRemove)
+    );
+
+    // Update the form input
+    const updatedEmails = formData.participantEmails
+      .split(",")
+      .map((email) => email.trim())
+      .filter((email) => email !== emailToRemove)
+      .join(", ");
+
+    setFormData((prev) => ({ ...prev, participantEmails: updatedEmails }));
+  };
 
   const handleSave = () => {
     if (!meeting) return;
@@ -109,9 +161,8 @@ export const EditMeetingDialog: React.FC<EditMeetingDialogProps> = ({
       updates.duration = parseInt(formData.duration);
     }
 
-    if (formData.participantEmails.trim()) {
-      updates.participantEmails = formData.participantEmails.trim();
-    }
+    // Always include participant emails to handle additions/removals
+    updates.participantEmails = formData.participantEmails.trim();
 
     // Only save if there are changes
     if (Object.keys(updates).length > 0) {
@@ -192,9 +243,67 @@ export const EditMeetingDialog: React.FC<EditMeetingDialogProps> = ({
             </Select>
           </div>
 
-          {/* Participant Emails */}
+          {/* Current Participants */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-muted-foreground" />
+              <Label className="text-sm font-medium">
+                Current Participants
+              </Label>
+              {loadingParticipants && (
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              )}
+            </div>
+
+            {currentParticipants.length > 0 ? (
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {currentParticipants.map((participant, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-2 bg-muted/30 rounded-md"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-3 h-3 text-muted-foreground" />
+                      <div>
+                        <div className="text-sm font-medium">
+                          {participant.name}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {participant.email}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={participant.joined ? "default" : "secondary"}
+                        className="text-xs"
+                      >
+                        {participant.joined ? "Joined" : "Invited"}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeParticipant(participant.email)}
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground py-2">
+                No participants invited yet
+              </div>
+            )}
+          </div>
+
+          {/* Add Participant Emails */}
           <div className="space-y-2">
-            <Label htmlFor="edit-emails">Participant Emails (optional)</Label>
+            <Label htmlFor="edit-emails">
+              Add Participant Emails (optional)
+            </Label>
             <Textarea
               id="edit-emails"
               value={formData.participantEmails}
@@ -208,7 +317,8 @@ export const EditMeetingDialog: React.FC<EditMeetingDialogProps> = ({
               className="bg-background/50 border-border/50 focus:border-primary min-h-[60px]"
             />
             <p className="text-xs text-muted-foreground">
-              Separate multiple emails with commas
+              Separate multiple emails with commas. You can also remove
+              participants above.
             </p>
           </div>
 

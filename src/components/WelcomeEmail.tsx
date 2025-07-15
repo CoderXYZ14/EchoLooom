@@ -16,7 +16,7 @@ import {
   Img,
   Button,
 } from "@react-email/components";
-import { SOCIAL_LINKS } from "@/lib/links";
+import { LOGO_URL, SOCIAL_LINKS } from "@/lib/links";
 
 interface WelcomeEmailProps {
   username: string;
@@ -38,13 +38,13 @@ export const WelcomeEmail = ({ username }: WelcomeEmailProps) => {
             {/* Header with Logo */}
             <Section className="text-center mb-8">
               <Img
-                src="https://tan-ebony-93.tiiny.site/favicon.svg"
+                src={LOGO_URL}
                 alt="EchoLoom Logo"
                 width="60"
                 height="60"
                 className="mx-auto mb-1"
               />
-              <Text className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-cyan-600 bg-clip-text text-transparent mb-0">
+              <Text className="text-2xl font-bold text-black mb-0">
                 EchoLoom
               </Text>
             </Section>
@@ -87,12 +87,22 @@ export const WelcomeEmail = ({ username }: WelcomeEmailProps) => {
               <Text className="font-semibold text-[16px] text-gray-800 mb-4">
                 What you can do with EchoLoom:
               </Text>
-              <ul className="text-gray-700 text-[14px] leading-[22px] space-y-2 list-disc list-inside">
-                <li>Schedule meetings with calendar integration</li>
-                <li>Invite participants via email</li>
-                <li>Join meetings as guest or authenticated user</li>
-                <li>Real-time video calls with high quality</li>
-                <li>View meeting history and analytics</li>
+              <ul className="text-gray-700 text-[14px] leading-[22px] list-disc list-inside">
+                <li style={{ marginBottom: "8px" }}>
+                  Schedule meetings with calendar integration
+                </li>
+                <li style={{ marginBottom: "8px" }}>
+                  Invite participants via email
+                </li>
+                <li style={{ marginBottom: "8px" }}>
+                  Join meetings as guest or authenticated user
+                </li>
+                <li style={{ marginBottom: "8px" }}>
+                  Real-time video calls with high quality
+                </li>
+                <li style={{ marginBottom: "8px" }}>
+                  View meeting history and analytics
+                </li>
               </ul>
             </Section>
 
@@ -110,10 +120,11 @@ export const WelcomeEmail = ({ username }: WelcomeEmailProps) => {
                 <tr className="w-full">
                   <td align="center">
                     <Img
-                      src="https://tan-ebony-93.tiiny.site/favicon.svg"
+                      src={LOGO_URL}
                       alt="EchoLoom Logo"
                       width="42"
                       height="42"
+                      className="mx-auto mb-1"
                     />
                   </td>
                 </tr>
@@ -161,14 +172,14 @@ export const WelcomeEmail = ({ username }: WelcomeEmailProps) => {
               By signing up, you agree to our{" "}
               <Link
                 href={`${baseUrl}/terms`}
-                className="text-purple-600 underline hover:text-purple-800"
+                className="text-purple-600 underline"
               >
                 Terms of Service
               </Link>{" "}
               and{" "}
               <Link
                 href={`${baseUrl}/privacy`}
-                className="text-purple-600 underline hover:text-purple-800"
+                className="text-purple-600 underline"
               >
                 Privacy Policy
               </Link>

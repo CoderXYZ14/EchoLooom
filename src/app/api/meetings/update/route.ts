@@ -5,7 +5,11 @@ import MeetingModel from "@/models/Meeting";
 import UserModel from "@/models/User";
 import dbConnect from "@/lib/db";
 import mongoose from "mongoose";
-import { sendMeetingInviteEmail, sendMeetingUpdateEmail } from "@/lib/email";
+import {
+  sendMeetingInviteEmail,
+  sendMeetingUpdateEmail,
+  sendMeetingCancellationEmail,
+} from "@/lib/email";
 
 interface UpdateMeetingRequest {
   id: string;
@@ -156,6 +160,43 @@ export async function PUT(request: NextRequest) {
       const removedEmails = oldParticipantEmails.filter(
         (email) => !newParticipantEmails.includes(email)
       );
+
+      console.log("Old participant emails:", oldParticipantEmails);
+      console.log("New participant emails:", newParticipantEmails);
+      console.log("Removed emails:", removedEmails);
+
+      // Send cancellation emails to removed participants
+      if (removedEmails.length > 0) {
+        const hostName = session.user.name || session.user.email || "Host";
+
+        for (const email of removedEmails) {
+          const removedParticipant = meeting.participants.find(
+            (p) => p.email === email
+          );
+          if (removedParticipant) {
+            try {
+              await sendMeetingCancellationEmail({
+                participantName: removedParticipant.name,
+                participantEmail: removedParticipant.email,
+                hostName,
+                meetingTitle: meeting.title,
+                meetingTime: meeting.scheduledTime.toISOString(),
+                duration: meeting.duration,
+                reason: "You have been removed from this meeting by the host.",
+              });
+              console.log(
+                `Removal notification sent to ${removedParticipant.email}`
+              );
+            } catch (emailError) {
+              console.error(
+                `Failed to send removal notification to ${removedParticipant.email}:`,
+                emailError
+              );
+              // Continue with other participants even if email fails
+            }
+          }
+        }
+      }
 
       for (const email of removedEmails) {
         await UserModel.findOneAndUpdate(

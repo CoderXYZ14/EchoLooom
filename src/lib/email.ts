@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import WelcomeEmail from "@/components/WelcomeEmail";
 import MeetingInviteEmail from "@/components/MeetingInviteEmail";
 import MeetingUpdateEmail from "@/components/MeetingUpdateEmail";
+import MeetingCancellationEmail from "@/components/MeetingCancellationEmail";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -134,6 +135,57 @@ export const sendMeetingUpdateEmail = async ({
     return { success: true, data };
   } catch (error) {
     console.error("Failed to send meeting update email:", error);
+    return { success: false, error };
+  }
+};
+
+export const sendMeetingCancellationEmail = async ({
+  participantName,
+  participantEmail,
+  hostName,
+  meetingTitle,
+  meetingTime,
+  duration,
+  reason,
+}: {
+  participantName: string;
+  participantEmail: string;
+  hostName: string;
+  meetingTitle: string;
+  meetingTime: string;
+  duration: number;
+  reason?: string;
+}) => {
+  try {
+    console.log("About to send meeting cancellation email", {
+      participantName,
+      participantEmail,
+      meetingTitle,
+    });
+
+    const { data, error } = await resend.emails.send({
+      from: "EchoLoom <meetings@resend.dev>",
+      to: [participantEmail],
+      subject: `Meeting Cancelled: ${meetingTitle}`,
+      react: MeetingCancellationEmail({
+        participantName,
+        hostName,
+        meetingTitle,
+        meetingTime,
+        duration,
+        reason,
+      }),
+    });
+
+    if (error) {
+      console.error("Resend API error:", error);
+      return { success: false, error };
+    }
+
+    console.log("Meeting cancellation email sent successfully", data);
+    return { success: true, data };
+  } catch (error) {
+    console.error("Failed to send meeting cancellation email:", error);
     return { success: false, error };
   }
 };

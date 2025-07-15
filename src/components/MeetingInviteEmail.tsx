@@ -13,6 +13,7 @@ import {
   Section,
   Button,
 } from "@react-email/components";
+import { LOGO_URL } from "@/lib/links";
 
 interface MeetingInviteEmailProps {
   participantName: string;
@@ -75,13 +76,13 @@ export const MeetingInviteEmail = ({
             {/* Header with Logo */}
             <Section className="text-center mb-8">
               <Img
-                src="https://tan-ebony-93.tiiny.site/favicon.svg"
+                src={LOGO_URL}
                 alt="EchoLoom Logo"
                 width="60"
                 height="60"
                 className="mx-auto mb-1"
               />
-              <Text className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-cyan-600 bg-clip-text text-transparent mb-0">
+              <Text className="text-2xl font-bold  text-black mb-0">
                 EchoLoom
               </Text>
             </Section>
@@ -106,8 +107,8 @@ export const MeetingInviteEmail = ({
                 {meetingTitle}
               </Text>
 
-              <div className="space-y-3">
-                <div className="flex items-center">
+              <div>
+                <div className="flex items-center mb-3">
                   <Text className="font-semibold text-gray-700 text-[14px] w-20 mb-0">
                     Date:
                   </Text>
@@ -116,7 +117,7 @@ export const MeetingInviteEmail = ({
                   </Text>
                 </div>
 
-                <div className="flex items-center">
+                <div className="flex items-center mb-3">
                   <Text className="font-semibold text-gray-700 text-[14px] w-20 mb-0">
                     Time:
                   </Text>
@@ -125,7 +126,7 @@ export const MeetingInviteEmail = ({
                   </Text>
                 </div>
 
-                <div className="flex items-center">
+                <div className="flex items-center mb-3">
                   <Text className="font-semibold text-gray-700 text-[14px] w-20 mb-0">
                     Duration:
                   </Text>
@@ -134,7 +135,7 @@ export const MeetingInviteEmail = ({
                   </Text>
                 </div>
 
-                <div className="flex items-center">
+                <div className="flex items-center mb-3">
                   <Text className="font-semibold text-gray-700 text-[14px] w-20 mb-0">
                     Host:
                   </Text>
@@ -165,14 +166,18 @@ export const MeetingInviteEmail = ({
               <Text className="font-semibold text-[16px] text-gray-800 mb-3">
                 How to join:
               </Text>
-              <ul className="text-gray-700 text-[14px] leading-[22px] space-y-2 list-disc list-inside">
-                <li>Click the &quot;Join Meeting&quot; button above</li>
-                <li>Allow camera and microphone access when prompted</li>
-                <li>
+              <ul className="text-gray-700 text-[14px] leading-[22px] list-disc list-inside">
+                <li className="mb-2">
+                  Click the &quot;Join Meeting&quot; button above
+                </li>
+                <li className="mb-2">
+                  Allow camera and microphone access when prompted
+                </li>
+                <li className="mb-2">
                   You can join as a guest or sign in with Google for full
                   features
                 </li>
-                <li>
+                <li className="mb-2">
                   The meeting link will be active 15 minutes before the
                   scheduled time
                 </li>
@@ -192,10 +197,11 @@ export const MeetingInviteEmail = ({
                 <tr className="w-full">
                   <td align="center">
                     <Img
-                      src="https://tan-ebony-93.tiiny.site/favicon.svg"
+                      src={LOGO_URL}
                       alt="EchoLoom Logo"
                       width="42"
                       height="42"
+                      className="mx-auto mb-1"
                     />
                   </td>
                 </tr>

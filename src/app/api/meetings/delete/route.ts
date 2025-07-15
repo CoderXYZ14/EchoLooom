@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import MeetingModel from "@/models/Meeting";
 import UserModel from "@/models/User";
 import dbConnect from "@/lib/db";
+import { sendMeetingCancellationEmail } from "@/lib/email";
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -47,6 +48,32 @@ export async function DELETE(request: NextRequest) {
 
     // If user is the host, delete the entire meeting
     if (isHost) {
+      // Send cancellation emails to all participants
+      if (meeting.participants.length > 0) {
+        const hostName = session.user.name || session.user.email || "Host";
+
+        for (const participant of meeting.participants) {
+          try {
+            await sendMeetingCancellationEmail({
+              participantName: participant.name,
+              participantEmail: participant.email,
+              hostName,
+              meetingTitle: meeting.title,
+              meetingTime: meeting.scheduledTime.toISOString(),
+              duration: meeting.duration,
+              reason: "The meeting has been cancelled by the host.",
+            });
+            console.log(`Cancellation email sent to ${participant.email}`);
+          } catch (emailError) {
+            console.error(
+              `Failed to send cancellation email to ${participant.email}:`,
+              emailError
+            );
+            // Continue with other participants even if email fails
+          }
+        }
+      }
+
       // Remove meeting from all participants' meeting arrays
       await UserModel.updateMany(
         { meetings: meetingId },
