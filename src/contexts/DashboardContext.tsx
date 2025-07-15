@@ -30,6 +30,8 @@ interface DashboardContextType {
     replaceId?: string
   ) => void;
   upcomingMeetings: UpcomingMeeting[];
+  removePastMeeting: (meetingId: string) => void;
+  clearAllPastMeetings: () => void;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(
@@ -51,18 +53,24 @@ interface DashboardProviderProps {
     replaceId?: string
   ) => void;
   upcomingMeetings: UpcomingMeeting[];
+  removePastMeeting: (meetingId: string) => void;
+  clearAllPastMeetings: () => void;
 }
 
 export const DashboardProvider: React.FC<DashboardProviderProps> = ({
   children,
   addNewMeetingToState,
   upcomingMeetings,
+  removePastMeeting,
+  clearAllPastMeetings,
 }) => {
   return (
     <DashboardContext.Provider
       value={{
         addNewMeetingToState,
         upcomingMeetings,
+        removePastMeeting,
+        clearAllPastMeetings,
       }}
     >
       {children}

@@ -11,6 +11,7 @@ import {
   Video,
   Crown,
   Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -20,6 +21,7 @@ import Link from "next/link";
 import axios from "axios";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import { useDashboard } from "@/contexts/DashboardContext";
 
 interface MeetingHistoryItem {
   id: string;
@@ -43,6 +45,7 @@ interface MeetingHistoryItem {
 
 const MeetingHistoryPage = () => {
   const { data: session } = useSession();
+  const { removePastMeeting, clearAllPastMeetings } = useDashboard();
   const [meetings, setMeetings] = useState<MeetingHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -51,6 +54,7 @@ const MeetingHistoryPage = () => {
   >([]);
   const [expandedMeeting, setExpandedMeeting] = useState<string | null>(null);
   const [deletingMeeting, setDeletingMeeting] = useState<string | null>(null);
+  const [clearingAll, setClearingAll] = useState(false);
 
   useEffect(() => {
     fetchMeetingHistory();
@@ -110,6 +114,9 @@ const MeetingHistoryPage = () => {
         );
         setExpandedMeeting(null); // Close expanded details
 
+        // Update the sidebar by removing the meeting from past meetings
+        removePastMeeting(meetingId);
+
         // Show success message
         toast.success(
           response.data.message || "Operation completed successfully"
@@ -126,6 +133,42 @@ const MeetingHistoryPage = () => {
       );
     } finally {
       setDeletingMeeting(null);
+    }
+  };
+
+  const clearAllHistory = async () => {
+    if (
+      !confirm(
+        `Are you sure you want to clear all meeting history? This will remove ${meetings.length} meetings from your history. This action cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setClearingAll(true);
+
+      // Delete all meetings one by one
+      const deletePromises = meetings.map((meeting) =>
+        axios.delete(`/api/meetings/delete?id=${meeting.id}`)
+      );
+
+      await Promise.all(deletePromises);
+
+      // Clear the state
+      setMeetings([]);
+      setFilteredMeetings([]);
+      setExpandedMeeting(null);
+
+      // Update the sidebar by clearing all past meetings
+      clearAllPastMeetings();
+
+      toast.success("All meeting history cleared successfully");
+    } catch (error: unknown) {
+      console.error("Error clearing all history:", error);
+      toast.error("Failed to clear all history");
+    } finally {
+      setClearingAll(false);
     }
   };
 
@@ -154,50 +197,79 @@ const MeetingHistoryPage = () => {
   );
 
   return (
-    <div className="flex-1 p-6 overflow-y-auto">
+    <div className="flex-1 p-4 overflow-y-auto">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <motion.div
-          className="mb-8"
+          className="mb-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
               <Link href="/dashboard">
                 <Button variant="ghost" size="sm" className="p-2">
                   <ArrowLeft className="w-4 h-4" />
                 </Button>
               </Link>
               <div>
-                <h1 className="text-3xl font-bold text-foreground">
+                <h1 className="text-2xl font-bold text-foreground">
                   Meeting History
                 </h1>
-                <p className="text-muted-foreground mt-1">
+                <p className="text-sm text-muted-foreground">
                   {meetings.length} meetings • All your past conversations
                 </p>
               </div>
             </div>
+
+            {/* Clear All History Button */}
+            {meetings.length > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="gap-2"
+                onClick={clearAllHistory}
+                disabled={clearingAll}
+              >
+                {clearingAll ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{
+                        duration: 1,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
+                      className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
+                    />
+                    Clearing...
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="w-4 h-4" />
+                    Clear All History
+                  </>
+                )}
+              </Button>
+            )}
           </div>
 
-          {/* Search and Filter */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search meetings..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-background/50 border-border/50 focus:border-primary"
-              />
-            </div>
+          {/* Search */}
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search meetings..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 h-9 bg-background/50 border-border/50 focus:border-primary text-sm"
+            />
           </div>
         </motion.div>
 
         {/* Content */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
+          <div className="flex items-center justify-center py-16">
             <motion.div
               animate={{ rotate: 360 }}
               transition={{
@@ -205,44 +277,44 @@ const MeetingHistoryPage = () => {
                 repeat: Infinity,
                 ease: "linear",
               }}
-              className="w-8 h-8 border-2 border-current border-t-transparent rounded-full"
+              className="w-6 h-6 border-2 border-current border-t-transparent rounded-full"
             />
           </div>
         ) : meetings.length === 0 ? (
           <motion.div
-            className="text-center py-20"
+            className="text-center py-16"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-              <Video className="w-8 h-8 text-muted-foreground" />
+            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-muted flex items-center justify-center">
+              <Video className="w-6 h-6 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">No meetings yet</h3>
-            <p className="text-muted-foreground mb-6">
+            <h3 className="text-lg font-semibold mb-2">No meetings yet</h3>
+            <p className="text-sm text-muted-foreground mb-4">
               Start your first meeting to see it appear here
             </p>
             <Link href="/dashboard">
-              <Button>Start New Meeting</Button>
+              <Button size="sm">Start New Meeting</Button>
             </Link>
           </motion.div>
         ) : filteredMeetings.length === 0 ? (
           <motion.div
-            className="text-center py-20"
+            className="text-center py-16"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-              <Search className="w-8 h-8 text-muted-foreground" />
+            <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-muted flex items-center justify-center">
+              <Search className="w-6 h-6 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">No meetings found</h3>
-            <p className="text-muted-foreground">
+            <h3 className="text-lg font-semibold mb-2">No meetings found</h3>
+            <p className="text-sm text-muted-foreground">
               Try adjusting your search terms
             </p>
           </motion.div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {sortedDates.map((date, dateIndex) => (
               <motion.div
                 key={date}
@@ -251,63 +323,63 @@ const MeetingHistoryPage = () => {
                 transition={{ duration: 0.6, delay: dateIndex * 0.1 }}
               >
                 {/* Date Header */}
-                <div className="flex items-center gap-4 mb-4">
-                  <h2 className="text-lg font-semibold text-foreground">
+                <div className="flex items-center gap-3 mb-3">
+                  <h2 className="text-base font-semibold text-foreground">
                     {date}
                   </h2>
                   <div className="flex-1 h-px bg-border"></div>
                   <Badge variant="outline" className="text-xs">
-                    {groupedMeetings[date].length} meetings
+                    {groupedMeetings[date].length}
                   </Badge>
                 </div>
 
                 {/* Meetings for this date */}
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {groupedMeetings[date].map((meeting, meetingIndex) => (
                     <motion.div
                       key={meeting.id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.4, delay: meetingIndex * 0.05 }}
-                      whileHover={{ scale: 1.01 }}
+                      whileHover={{ scale: 1.005 }}
                     >
-                      <Card className="p-4 bg-card/50 backdrop-blur-md border-border/50 hover:border-border transition-all duration-300 cursor-pointer group">
+                      <Card className="p-3 bg-card/50 backdrop-blur-md border-border/50 hover:border-border transition-all duration-300 cursor-pointer group">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center group-hover:from-primary/30 group-hover:to-accent/30 transition-all duration-300">
-                              <Video className="w-6 h-6 text-primary" />
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center group-hover:from-primary/30 group-hover:to-accent/30 transition-all duration-300">
+                              <Video className="w-4 h-4 text-primary" />
                             </div>
 
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                                <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
                                   {meeting.name}
                                 </h3>
                                 {meeting.isHost && (
                                   <div title="You hosted this meeting">
-                                    <Crown className="w-4 h-4 text-yellow-500" />
+                                    <Crown className="w-3 h-3 text-yellow-500" />
                                   </div>
                                 )}
                               </div>
 
-                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
                                 <div className="flex items-center gap-1">
-                                  <Clock className="w-4 h-4" />
+                                  <Clock className="w-3 h-3" />
                                   {meeting.time} • {meeting.duration}
                                 </div>
                                 <div className="flex items-center gap-1">
-                                  <Users className="w-4 h-4" />
-                                  {meeting.participants} participants
+                                  <Users className="w-3 h-3" />
+                                  {meeting.participants}
                                 </div>
                               </div>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity h-7 px-2 text-xs"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setExpandedMeeting(
@@ -318,10 +390,10 @@ const MeetingHistoryPage = () => {
                               }}
                             >
                               {expandedMeeting === meeting.id
-                                ? "Hide Details"
+                                ? "Hide"
                                 : "Details"}
                               <ChevronDown
-                                className={`w-4 h-4 ml-1 transition-transform ${
+                                className={`w-3 h-3 ml-1 transition-transform ${
                                   expandedMeeting === meeting.id
                                     ? "rotate-180"
                                     : ""
@@ -338,20 +410,20 @@ const MeetingHistoryPage = () => {
                             animate={{ opacity: 1, height: "auto" }}
                             exit={{ opacity: 0, height: 0 }}
                             transition={{ duration: 0.3 }}
-                            className="mt-4 pt-4 border-t border-border/50"
+                            className="mt-3 pt-3 border-t border-border/50"
                           >
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                               {/* Meeting Details */}
                               <div>
-                                <h4 className="text-sm font-semibold text-foreground mb-2">
+                                <h4 className="text-xs font-semibold text-foreground mb-2">
                                   Meeting Details
                                 </h4>
-                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div className="grid grid-cols-2 gap-3 text-xs">
                                   <div>
                                     <span className="text-muted-foreground">
                                       Room ID:
                                     </span>
-                                    <span className="ml-2 text-foreground font-mono">
+                                    <span className="ml-2 text-foreground font-mono text-xs">
                                       {meeting.dailyRoomName}
                                     </span>
                                   </div>
@@ -384,17 +456,17 @@ const MeetingHistoryPage = () => {
 
                               {/* Participants */}
                               <div>
-                                <h4 className="text-sm font-semibold text-foreground mb-2">
+                                <h4 className="text-xs font-semibold text-foreground mb-2">
                                   Participants ({meeting.participants})
                                 </h4>
-                                <div className="space-y-2">
+                                <div className="space-y-1">
                                   {/* Host */}
-                                  <div className="flex items-center gap-3 p-2 rounded-lg bg-muted/30">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
-                                      <Crown className="w-4 h-4 text-white" />
+                                  <div className="flex items-center gap-2 p-2 rounded-md bg-muted/30">
+                                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
+                                      <Crown className="w-3 h-3 text-white" />
                                     </div>
                                     <div className="flex-1">
-                                      <div className="text-sm font-medium text-foreground">
+                                      <div className="text-xs font-medium text-foreground">
                                         {meeting.hostName}{" "}
                                         {meeting.hostEmail ===
                                         session?.user?.email
@@ -407,7 +479,7 @@ const MeetingHistoryPage = () => {
                                     </div>
                                     <Badge
                                       variant="outline"
-                                      className="text-xs"
+                                      className="text-xs h-5"
                                     >
                                       Host
                                     </Badge>
@@ -418,9 +490,9 @@ const MeetingHistoryPage = () => {
                                     (participant, index) => (
                                       <div
                                         key={index}
-                                        className="flex items-center gap-3 p-2 rounded-lg bg-muted/20"
+                                        className="flex items-center gap-2 p-2 rounded-md bg-muted/20"
                                       >
-                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
                                           <span className="text-white text-xs font-semibold">
                                             {participant.name
                                               .split(" ")
@@ -430,7 +502,7 @@ const MeetingHistoryPage = () => {
                                           </span>
                                         </div>
                                         <div className="flex-1">
-                                          <div className="text-sm font-medium text-foreground">
+                                          <div className="text-xs font-medium text-foreground">
                                             {participant.name}
                                           </div>
                                           <div className="text-xs text-muted-foreground">
@@ -443,7 +515,7 @@ const MeetingHistoryPage = () => {
                                               ? "default"
                                               : "secondary"
                                           }
-                                          className="text-xs"
+                                          className="text-xs h-5"
                                         >
                                           {participant.joined
                                             ? "Joined"
@@ -456,10 +528,10 @@ const MeetingHistoryPage = () => {
                               </div>
 
                               {/* Delete Section */}
-                              <div className="pt-4 border-t border-border/50">
+                              <div className="pt-3 border-t border-border/50">
                                 <div className="flex items-center justify-between">
                                   <div>
-                                    <h4 className="text-sm font-semibold text-foreground mb-1">
+                                    <h4 className="text-xs font-semibold text-foreground mb-1">
                                       Danger Zone
                                     </h4>
                                     <p className="text-xs text-muted-foreground">
@@ -471,7 +543,7 @@ const MeetingHistoryPage = () => {
                                   <Button
                                     variant="destructive"
                                     size="sm"
-                                    className="gap-2"
+                                    className="gap-1 h-7 px-3 text-xs"
                                     onClick={() => deleteMeeting(meeting.id)}
                                     disabled={deletingMeeting === meeting.id}
                                   >
@@ -484,16 +556,14 @@ const MeetingHistoryPage = () => {
                                             repeat: Infinity,
                                             ease: "linear",
                                           }}
-                                          className="w-4 h-4 border-2 border-current border-t-transparent rounded-full"
+                                          className="w-3 h-3 border-2 border-current border-t-transparent rounded-full"
                                         />
                                         Deleting...
                                       </>
                                     ) : (
                                       <>
-                                        <Trash2 className="w-4 h-4" />
-                                        {meeting.isHost
-                                          ? "Delete Meeting"
-                                          : "Remove from History"}
+                                        <Trash2 className="w-3 h-3" />
+                                        {meeting.isHost ? "Delete" : "Remove"}
                                       </>
                                     )}
                                   </Button>

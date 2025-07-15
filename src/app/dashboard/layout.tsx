@@ -200,31 +200,126 @@ export default function DashboardLayout({
     setEditingMeeting(meeting);
   };
 
-  const handleDeleteMeeting = async (meeting: UpcomingMeeting) => {
-    if (confirm(`Are you sure you want to delete "${meeting.title}"?`)) {
-      // Optimistic update - remove from UI immediately
-      const originalMeetings = [...upcomingMeetings];
-      setUpcomingMeetings((prev) => prev.filter((m) => m.id !== meeting.id));
+  const updateMeeting = async (
+    meetingId: string,
+    updates: MeetingUpdateData
+  ) => {
+    setIsUpdatingMeeting(true);
 
-      try {
-        const response = await axios.delete(
-          `/api/meetings/delete?id=${meeting.id}`
-        );
-        if (response.data.success) {
-          // Success - meeting already removed from UI
-          console.log("Meeting deleted successfully");
-        } else {
-          // Revert on error
-          setUpcomingMeetings(originalMeetings);
-          toast.error(response.data.error || "Failed to delete meeting");
+    // Optimistic update - update UI immediately
+    const originalMeetings = [...upcomingMeetings];
+    setUpcomingMeetings((prev) =>
+      prev.map((meeting) => {
+        if (meeting.id === meetingId) {
+          const updatedMeeting = { ...meeting };
+          if (updates.title) updatedMeeting.title = updates.title;
+          if (updates.scheduledTime) {
+            updatedMeeting.scheduledTime = new Date(updates.scheduledTime);
+            // Update time display
+            const newTime = new Date(updates.scheduledTime);
+            const isToday =
+              newTime.toDateString() === new Date().toDateString();
+            const isTomorrow =
+              newTime.toDateString() ===
+              new Date(Date.now() + 86400000).toDateString();
+
+            if (isToday) {
+              updatedMeeting.time = `${newTime.toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              })} Today`;
+            } else if (isTomorrow) {
+              updatedMeeting.time = `Tomorrow ${newTime.toLocaleTimeString(
+                "en-US",
+                {
+                  hour: "numeric",
+                  minute: "2-digit",
+                  hour12: true,
+                }
+              )}`;
+            } else {
+              updatedMeeting.time = newTime.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              });
+            }
+          }
+          if (updates.duration) updatedMeeting.duration = updates.duration;
+          return updatedMeeting;
         }
-      } catch (error) {
-        // Revert on error
-        setUpcomingMeetings(originalMeetings);
-        console.error("Error deleting meeting:", error);
-        toast.error("Failed to delete meeting");
+        return meeting;
+      })
+    );
+
+    try {
+      const response = await axios.put("/api/meetings/update", {
+        id: meetingId,
+        ...updates,
+      });
+
+      if (response.data.success) {
+        toast.success("Meeting updated successfully");
+        setEditingMeeting(null);
+        // Refresh the meetings to get the latest data
+        fetchUpcomingMeetings();
+      } else {
+        throw new Error(response.data.error || "Failed to update meeting");
       }
+    } catch (error: unknown) {
+      console.error("Error updating meeting:", error);
+      toast.error("Failed to update meeting");
+      // Revert optimistic update
+      setUpcomingMeetings(originalMeetings);
+    } finally {
+      setIsUpdatingMeeting(false);
     }
+  };
+
+  const handleDeleteMeeting = async (meeting: UpcomingMeeting) => {
+    if (
+      !confirm(
+        `Are you sure you want to delete "${meeting.title}"? This action cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    // Optimistic update - remove from UI immediately
+    const originalMeetings = [...upcomingMeetings];
+    setUpcomingMeetings((prev) => prev.filter((m) => m.id !== meeting.id));
+
+    try {
+      const response = await axios.delete(
+        `/api/meetings/delete?id=${meeting.id}`
+      );
+
+      if (response.data.success) {
+        toast.success("Meeting deleted successfully");
+      } else {
+        throw new Error(response.data.error || "Failed to delete meeting");
+      }
+    } catch (error: unknown) {
+      console.error("Error deleting meeting:", error);
+      toast.error("Failed to delete meeting");
+      // Revert optimistic update
+      setUpcomingMeetings(originalMeetings);
+    }
+  };
+
+  // Function to remove a meeting from past meetings (for sidebar update)
+  const removePastMeeting = (meetingId: string) => {
+    setPastMeetings((prev) =>
+      prev.filter((meeting) => meeting.id !== meetingId)
+    );
+  };
+
+  // Function to clear all past meetings (for sidebar update)
+  const clearAllPastMeetings = () => {
+    setPastMeetings([]);
   };
 
   const addNewMeetingToState = (
@@ -297,104 +392,18 @@ export default function DashboardLayout({
     });
   };
 
-  const updateMeeting = async (
-    meetingId: string,
-    updates: MeetingUpdateData
-  ) => {
-    setIsUpdatingMeeting(true);
-
-    // Optimistic update - update UI immediately
-    const originalMeetings = [...upcomingMeetings];
-    setUpcomingMeetings((prev) =>
-      prev.map((meeting) => {
-        if (meeting.id === meetingId) {
-          const updatedMeeting = { ...meeting };
-          if (updates.title) updatedMeeting.title = updates.title;
-          if (updates.scheduledTime) {
-            updatedMeeting.scheduledTime = new Date(updates.scheduledTime);
-            // Update time display
-            const newTime = new Date(updates.scheduledTime);
-            const isToday =
-              newTime.toDateString() === new Date().toDateString();
-            const isTomorrow =
-              newTime.toDateString() ===
-              new Date(Date.now() + 86400000).toDateString();
-
-            if (isToday) {
-              updatedMeeting.time = `${newTime.toLocaleTimeString("en-US", {
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: true,
-              })} Today`;
-            } else if (isTomorrow) {
-              updatedMeeting.time = `Tomorrow ${newTime.toLocaleTimeString(
-                "en-US",
-                {
-                  hour: "numeric",
-                  minute: "2-digit",
-                  hour12: true,
-                }
-              )}`;
-            } else {
-              updatedMeeting.time = newTime.toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: true,
-              });
-            }
-          }
-          if (updates.duration) updatedMeeting.duration = updates.duration;
-          return updatedMeeting;
-        }
-        return meeting;
-      })
-    );
-
-    try {
-      const response = await axios.put("/api/meetings/update", {
-        id: meetingId,
-        ...updates,
-      });
-      if (response.data.success) {
-        console.log("Meeting updated successfully");
-        setEditingMeeting(null); // Close the dialog
-      } else {
-        // Revert on error
-        setUpcomingMeetings(originalMeetings);
-        toast.error(response.data.error || "Failed to update meeting");
-      }
-    } catch (error) {
-      // Revert on error
-      setUpcomingMeetings(originalMeetings);
-      console.error("Error updating meeting:", error);
-      toast.error("Failed to update meeting");
-    } finally {
-      setIsUpdatingMeeting(false);
-    }
-  };
-
   if (status === "loading") {
     return (
-      <div className="h-screen flex items-center justify-center bg-background">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
-            <motion.div
-              className="w-4 h-4 rounded-full bg-white"
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.8, 1, 0.8],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            />
-          </div>
-          <span className="text-foreground">Loading...</span>
-        </div>
+      <div className="h-screen flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{
+            duration: 1,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+          className="w-8 h-8 border-2 border-current border-t-transparent rounded-full"
+        />
       </div>
     );
   }
@@ -418,6 +427,8 @@ export default function DashboardLayout({
           <DashboardProvider
             addNewMeetingToState={addNewMeetingToState}
             upcomingMeetings={upcomingMeetings}
+            removePastMeeting={removePastMeeting}
+            clearAllPastMeetings={clearAllPastMeetings}
           >
             {children}
           </DashboardProvider>
