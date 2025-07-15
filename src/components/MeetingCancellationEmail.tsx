@@ -153,14 +153,14 @@ export const MeetingCancellationEmail = ({
               </Text>
               <Text className="text-gray-500 text-[12px] leading-[20px]">
                 <a
-                  href="https://echoloom.vercel.app/terms"
+                  href="https://echoloom.live/terms"
                   className="text-purple-600 underline"
                 >
                   Terms of Service
                 </a>
                 {" • "}
                 <a
-                  href="https://echoloom.vercel.app/privacy"
+                  href="https://echoloom.live/privacy"
                   className="text-purple-600 underline"
                 >
                   Privacy Policy

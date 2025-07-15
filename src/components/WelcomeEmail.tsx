@@ -22,8 +22,7 @@ interface WelcomeEmailProps {
   username: string;
 }
 
-const baseUrl =
-  process.env.NEXT_PUBLIC_BASE_URL || "https://echoloom.vercel.app";
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://echoloom.live";
 
 export const WelcomeEmail = ({ username }: WelcomeEmailProps) => {
   return (

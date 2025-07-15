@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://echoloom.vercel.app"),
+  metadataBase: new URL("https://echoloom.live"),
   title: "EchoLoom — Smarter Video Calls with Personal Audio Control",
   description:
     "EchoLoom is a video conferencing platform that gives you control. Tune out background noise, lower meeting volume, and finally enjoy your favorite music while staying connected.",
@@ -111,7 +111,7 @@ export default function RootLayout({
               name: "EchoLoom",
               operatingSystem: "All",
               applicationCategory: "CommunicationApplication",
-              url: "https://echoloom.vercel.app",
+              url: "",
               description:
                 "EchoLoom is a video conferencing platform that puts users in control — adjust meeting volume, join in real-time, and stay productive without audio chaos.",
               keywords: [

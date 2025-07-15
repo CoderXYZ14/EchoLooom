@@ -264,7 +264,7 @@ export async function PUT(request: NextRequest) {
       // Send invitation emails to newly added participants only
       if (addedParticipants.length > 0) {
         const meetingLink = `${
-          process.env.NEXT_PUBLIC_BASE_URL || "https://echoloom.vercel.app"
+          process.env.NEXT_PUBLIC_BASE_URL || "https://echoloom.live"
         }/meeting/${updatedMeeting.dailyRoomName}`;
 
         for (const participant of addedParticipants) {
