@@ -1,5 +1,9 @@
 export const CONTACT_EMAIL = "shahwaizislam1404@gmail.com";
 
+export const URLS = {
+  BUY_ME_COFFEE: "https://buymeacoffee.com/coderxyz14",
+} as const;
+
 export const SOCIAL_LINKS = {
   twitter: "https://x.com/coderxyz14",
   github: "https://github.com/CoderXYZ14",

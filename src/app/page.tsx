@@ -31,6 +31,7 @@ import {
   Linkedin,
   Mail,
   LayoutDashboard,
+  Coffee,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,7 +41,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { SOCIAL_LINKS } from "@/lib/links";
+import { SOCIAL_LINKS, URLS } from "@/lib/links";
 
 const EchoLoom = () => {
   const { theme, setTheme } = useTheme();
@@ -1811,26 +1812,15 @@ const EchoLoom = () => {
                 </div>
               </div>
 
-              {/* <motion.div
-                className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400"
-                whileHover={{ scale: 1.05 }}
+              <Link
+                href={URLS.BUY_ME_COFFEE}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-4 py-2 rounded-md bg-[#FFDD00] text-black font-medium hover:bg-[#FFDD00]/90 transition-all mr-4"
               >
-                <span>Built with</span>
-                <motion.span
-                  className="text-red-400"
-                  animate={{
-                    scale: [1, 1.2, 1],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                >
-                  ❤️
-                </motion.span>
-                <span>by developers, for developers</span>
-              </motion.div> */}
+                <Coffee className="h-4 w-4 mr-2" />
+                <span>Buy me a coffee</span>
+              </Link>
             </div>
           </motion.div>
         </div>
