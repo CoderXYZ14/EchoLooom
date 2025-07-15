@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion } from "motion/react";
 import { Video, User, Mail, ArrowRight, ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
 
 interface MeetingWrapperProps {
   roomUrl: string;
@@ -71,14 +72,14 @@ export default function MeetingWrapper({
 
   const handleGuestJoin = async () => {
     if (!guestForm.name.trim() || !guestForm.email.trim()) {
-      alert("Please enter both name and email");
+      toast.error("Please enter both name and email");
       return;
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(guestForm.email)) {
-      alert("Please enter a valid email address");
+      toast.error("Please enter a valid email address");
       return;
     }
 
@@ -110,11 +111,11 @@ export default function MeetingWrapper({
         // Go directly to meeting for guest users too
         setProceedToMeeting(true);
       } else {
-        alert(data.error || "Failed to join as guest");
+        toast.error(data.error || "Failed to join as guest");
       }
     } catch (error) {
       console.error("Error joining as guest:", error);
-      alert("Failed to join meeting");
+      toast.error("Failed to join meeting");
     } finally {
       setIsJoiningAsGuest(false);
     }

@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import axios from "axios";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 interface MeetingHistoryItem {
   id: string;
@@ -110,13 +111,15 @@ const MeetingHistoryPage = () => {
         setExpandedMeeting(null); // Close expanded details
 
         // Show success message
-        alert(response.data.message || "Operation completed successfully");
+        toast.success(
+          response.data.message || "Operation completed successfully"
+        );
       } else {
-        alert(response.data.error || `Failed to ${actionText}`);
+        toast.error(response.data.error || `Failed to ${actionText}`);
       }
     } catch (error: unknown) {
       console.error("Error deleting meeting:", error);
-      alert(
+      toast.error(
         `Failed to ${actionText}: ${
           (error as Error).message || "Unknown error"
         }`

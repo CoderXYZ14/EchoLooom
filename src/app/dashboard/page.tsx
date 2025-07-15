@@ -31,6 +31,7 @@ import { DateTimePicker } from "@/components/ui/datetime-picker";
 import { useSession } from "next-auth/react";
 import { useDashboard } from "@/contexts/DashboardContext";
 import axios from "axios";
+import { toast } from "sonner";
 
 const GRADIENT_COLORS = ["#00D4FF", "#7C3AED", "#EC4899", "#F59E0B"];
 
@@ -99,7 +100,7 @@ const EchoLoomDashboard = () => {
 
   const joinMeeting = async () => {
     if (!meetingCode.trim()) {
-      alert("Meeting code is required");
+      toast.error("Meeting code is required");
       return;
     }
 
@@ -111,7 +112,7 @@ const EchoLoomDashboard = () => {
       closeModal();
     } catch (error: unknown) {
       console.error("Error joining meeting:", error);
-      alert("Failed to join meeting");
+      toast.error("Failed to join meeting");
     } finally {
       setIsJoiningMeeting(false);
     }
@@ -119,7 +120,7 @@ const EchoLoomDashboard = () => {
 
   const createInstantMeeting = async () => {
     if (!newMeetingTitle.trim()) {
-      alert("Meeting title is required");
+      toast.error("Meeting title is required");
       return;
     }
 
@@ -136,11 +137,11 @@ const EchoLoomDashboard = () => {
         window.open(`/meeting/${roomName}`, "_blank");
         closeModal();
       } else {
-        alert(response.data.error || "Failed to create meeting");
+        toast.error(response.data.error || "Failed to create meeting");
       }
     } catch (error) {
       console.error("Error creating meeting:", error);
-      alert("Failed to create meeting");
+      toast.error("Failed to create meeting");
     } finally {
       setIsCreatingMeeting(false);
     }
@@ -148,17 +149,17 @@ const EchoLoomDashboard = () => {
 
   const scheduleMeeting = async () => {
     if (!scheduleData.title.trim()) {
-      alert("Meeting title is required");
+      toast.error("Meeting title is required");
       return;
     }
 
     if (!scheduleData.date) {
-      alert("Meeting date and time is required");
+      toast.error("Meeting date and time is required");
       return;
     }
 
     if (!scheduleData.duration) {
-      alert("Meeting duration is required");
+      toast.error("Meeting duration is required");
       return;
     }
 
@@ -197,14 +198,14 @@ const EchoLoomDashboard = () => {
         addNewMeetingToState(realMeeting, optimisticId);
         console.log("Meeting scheduled successfully!");
       } else {
-        alert(response.data.error || "Failed to schedule meeting");
+        toast.error(response.data.error || "Failed to schedule meeting");
       }
     } catch (error: unknown) {
       console.error("Error scheduling meeting:", error);
       if (error instanceof Error) {
-        alert(`Failed to schedule meeting: ${error.message}`);
+        toast.error(`Failed to schedule meeting: ${error.message}`);
       } else {
-        alert("Failed to schedule meeting");
+        toast.error("Failed to schedule meeting");
       }
     } finally {
       setIsSchedulingMeeting(false);

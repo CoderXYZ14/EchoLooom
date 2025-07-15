@@ -13,6 +13,7 @@ import { EditMeetingDialog } from "@/components/EditMeetingDialog";
 import { DashboardProvider } from "@/contexts/DashboardContext";
 import { useSession } from "next-auth/react";
 import axios from "axios";
+import { toast } from "sonner";
 
 interface MeetingHistoryItem {
   id: string;
@@ -146,7 +147,7 @@ export default function DashboardLayout({
 
     // Only prevent joining if meeting has ended
     if (status.hasEnded) {
-      alert(
+      toast.error(
         `This meeting has ended. It was scheduled for ${meetingStart.toLocaleString()} and ended at ${meetingEnd.toLocaleString()}.`
       );
       return;
@@ -192,7 +193,6 @@ export default function DashboardLayout({
       return;
     }
 
-    // Fallback - join anyway
     window.open(`/meeting/${meeting.dailyRoomName}`, "_blank");
   };
 
@@ -216,13 +216,13 @@ export default function DashboardLayout({
         } else {
           // Revert on error
           setUpcomingMeetings(originalMeetings);
-          alert(response.data.error || "Failed to delete meeting");
+          toast.error(response.data.error || "Failed to delete meeting");
         }
       } catch (error) {
         // Revert on error
         setUpcomingMeetings(originalMeetings);
         console.error("Error deleting meeting:", error);
-        alert("Failed to delete meeting");
+        toast.error("Failed to delete meeting");
       }
     }
   };
@@ -363,13 +363,13 @@ export default function DashboardLayout({
       } else {
         // Revert on error
         setUpcomingMeetings(originalMeetings);
-        alert(response.data.error || "Failed to update meeting");
+        toast.error(response.data.error || "Failed to update meeting");
       }
     } catch (error) {
       // Revert on error
       setUpcomingMeetings(originalMeetings);
       console.error("Error updating meeting:", error);
-      alert("Failed to update meeting");
+      toast.error("Failed to update meeting");
     } finally {
       setIsUpdatingMeeting(false);
     }

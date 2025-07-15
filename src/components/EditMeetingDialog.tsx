@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "sonner";
 
 interface UpcomingMeeting {
   id: string;
@@ -76,17 +77,17 @@ export const EditMeetingDialog: React.FC<EditMeetingDialogProps> = ({
     if (!meeting) return;
 
     if (!formData.title.trim()) {
-      alert("Meeting title is required");
+      toast.error("Meeting title is required");
       return;
     }
 
     if (!formData.scheduledTime) {
-      alert("Meeting date and time is required");
+      toast.error("Meeting date and time is required");
       return;
     }
 
     if (!formData.duration || parseInt(formData.duration) <= 0) {
-      alert("Duration must be greater than 0");
+      toast.error("Duration must be greater than 0");
       return;
     }
 
