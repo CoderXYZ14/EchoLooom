@@ -1,12 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import {
-  motion,
-  useMotionTemplate,
-  useMotionValue,
-  AnimatePresence,
-} from "motion/react";
+import { motion, useMotionTemplate, useMotionValue } from "motion/react";
 import {
   useDaily,
   useParticipantIds,
@@ -290,7 +285,11 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
       try {
         // Create audio context and gain node
         const audioContext = new (window.AudioContext ||
-          (window as any).webkitAudioContext)();
+          (
+            window as typeof window & {
+              webkitAudioContext: typeof AudioContext;
+            }
+          ).webkitAudioContext)();
         const gainNode = audioContext.createGain();
 
         audioContextRef.current = audioContext;

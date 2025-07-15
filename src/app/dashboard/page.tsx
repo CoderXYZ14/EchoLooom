@@ -66,7 +66,6 @@ const EchoLoomDashboard = () => {
   }, [color]);
 
   const backgroundGradient = useMotionTemplate`radial-gradient(circle at 50% 50%, ${color}15 0%, transparent 50%)`;
-  const glowEffect = useMotionTemplate`0 0 20px ${color}40`;
 
   const closeModal = () => {
     setModalType(null);
