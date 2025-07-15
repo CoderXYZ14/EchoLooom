@@ -6,7 +6,7 @@ export const URLS = {
 
 export const SOCIAL_LINKS = {
   twitter: "https://x.com/coderxyz14",
-  github: "https://github.com/CoderXYZ14",
+  github: "https://github.com/CoderXYZ14/EchoLooom",
   linkedin: "https://www.linkedin.com/in/shahwaiz-islam/",
   email: `mailto:${CONTACT_EMAIL}`,
   calendly: "https://calendly.com/shahwaizislam1404/30min",

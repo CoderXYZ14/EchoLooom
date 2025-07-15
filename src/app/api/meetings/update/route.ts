@@ -5,6 +5,7 @@ import MeetingModel from "@/models/Meeting";
 import UserModel from "@/models/User";
 import dbConnect from "@/lib/db";
 import mongoose from "mongoose";
+import { sendMeetingInviteEmail, sendMeetingUpdateEmail } from "@/lib/email";
 
 interface UpdateMeetingRequest {
   id: string;
@@ -59,13 +60,15 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Prepare update data
+    // Prepare update data and track changes
     const updateData: Partial<{
       title: string;
       scheduledTime: Date;
       duration: number;
       participants: Array<{ email: string; name: string; joined: boolean }>;
     }> = {};
+
+    const changedFields: string[] = [];
 
     if (title !== undefined) {
       if (!title.trim()) {
@@ -74,7 +77,10 @@ export async function PUT(request: NextRequest) {
           { status: 400 }
         );
       }
-      updateData.title = title.trim();
+      if (title.trim() !== meeting.title) {
+        updateData.title = title.trim();
+        changedFields.push("title");
+      }
     }
 
     if (scheduledTime !== undefined) {
@@ -91,7 +97,10 @@ export async function PUT(request: NextRequest) {
           { status: 400 }
         );
       }
-      updateData.scheduledTime = newMeetingDate;
+      if (newMeetingDate.getTime() !== meeting.scheduledTime.getTime()) {
+        updateData.scheduledTime = newMeetingDate;
+        changedFields.push("scheduledTime");
+      }
     }
 
     if (duration !== undefined) {
@@ -101,7 +110,10 @@ export async function PUT(request: NextRequest) {
           { status: 400 }
         );
       }
-      updateData.duration = duration;
+      if (duration !== meeting.duration) {
+        updateData.duration = duration;
+        changedFields.push("duration");
+      }
     }
 
     if (participantEmails !== undefined) {
@@ -171,6 +183,12 @@ export async function PUT(request: NextRequest) {
 
     // Handle new participants: create users if they don't exist and add meeting to their list
     if (updateData.participants) {
+      const oldParticipantEmails = meeting.participants.map((p) => p.email);
+
+      const addedParticipants = updateData.participants.filter(
+        (p) => !oldParticipantEmails.includes(p.email)
+      );
+
       for (const participant of updateData.participants) {
         try {
           // Check if user exists
@@ -199,6 +217,76 @@ export async function PUT(request: NextRequest) {
             error
           );
           // Continue with other participants even if one fails
+        }
+      }
+
+      // Send invitation emails to newly added participants only
+      if (addedParticipants.length > 0) {
+        const meetingLink = `${
+          process.env.NEXT_PUBLIC_BASE_URL || "https://echoloom.vercel.app"
+        }/meeting/${updatedMeeting.dailyRoomName}`;
+
+        for (const participant of addedParticipants) {
+          try {
+            await sendMeetingInviteEmail({
+              participantName: participant.name,
+              participantEmail: participant.email,
+              hostName: session.user.name || session.user.email || "Host",
+              meetingTitle: updatedMeeting.title,
+              meetingTime: updatedMeeting.scheduledTime.toISOString(),
+              duration: updatedMeeting.duration,
+              meetingLink,
+            });
+            console.log(
+              `Invitation email sent to new participant ${participant.email}`
+            );
+          } catch (emailError) {
+            console.error(
+              `Failed to send invitation email to ${participant.email}:`,
+              emailError
+            );
+            // Continue with other participants even if email fails
+          }
+        }
+      }
+    }
+
+    // Send update emails to existing participants if important fields changed
+    if (changedFields.length > 0) {
+      const meetingLink = `${
+        process.env.NEXT_PUBLIC_BASE_URL || "https://echoloom.com"
+      }/meeting/${updatedMeeting.dailyRoomName}`;
+
+      // Get existing participants (those who were already in the meeting)
+      const existingParticipants = meeting.participants.filter((p) => {
+        // Don't send update emails to participants who were removed
+        if (updateData.participants) {
+          return updateData.participants.some((newP) => newP.email === p.email);
+        }
+        return true; // If participants weren't updated, all existing participants should get updates
+      });
+
+      for (const participant of existingParticipants) {
+        try {
+          await sendMeetingUpdateEmail({
+            participantName: participant.name,
+            participantEmail: participant.email,
+            hostName: session.user.name || session.user.email || "Host",
+            meetingTitle: updatedMeeting.title,
+            meetingTime: updatedMeeting.scheduledTime.toISOString(),
+            duration: updatedMeeting.duration,
+            meetingLink,
+            changedFields,
+          });
+          console.log(
+            `Update email sent to existing participant ${participant.email}`
+          );
+        } catch (emailError) {
+          console.error(
+            `Failed to send update email to ${participant.email}:`,
+            emailError
+          );
+          // Continue with other participants even if email fails
         }
       }
     }

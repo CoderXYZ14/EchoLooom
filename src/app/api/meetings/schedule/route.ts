@@ -5,6 +5,7 @@ import Meeting from "@/models/Meeting";
 import User from "@/models/User";
 import dbConnect from "@/lib/db";
 import mongoose from "mongoose";
+import { sendMeetingInviteEmail } from "@/lib/email";
 
 interface ScheduleMeetingRequest {
   title: string;
@@ -199,6 +200,32 @@ export async function POST(req: NextRequest) {
             error
           );
           // Continue with other participants even if one fails
+        }
+      }
+
+      // Send invitation emails to all participants
+      const meetingLink = `${
+        process.env.NEXT_PUBLIC_BASE_URL || "https://echoloom.com"
+      }/meeting/${meeting.dailyRoomName}`;
+
+      for (const participant of participants) {
+        try {
+          await sendMeetingInviteEmail({
+            participantName: participant.name,
+            participantEmail: participant.email,
+            hostName: session.user.name || session.user.email || "Host",
+            meetingTitle: meeting.title,
+            meetingTime: meeting.scheduledTime.toISOString(),
+            duration: meeting.duration,
+            meetingLink,
+          });
+          console.log(`Invitation email sent to ${participant.email}`);
+        } catch (emailError) {
+          console.error(
+            `Failed to send invitation email to ${participant.email}:`,
+            emailError
+          );
+          // Continue with other participants even if email fails
         }
       }
     }

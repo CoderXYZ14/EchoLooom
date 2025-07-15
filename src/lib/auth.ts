@@ -3,6 +3,7 @@ import GoogleProvider from "next-auth/providers/google";
 import dbConnect from "./db";
 import UserModel from "@/models/User";
 import mongoose from "mongoose";
+import { sendWelcomeEmail } from "./email";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -23,13 +24,22 @@ export const authOptions: NextAuthOptions = {
 
           if (!existingUser && account.providerAccountId) {
             // Create new user if they don't exist
-            await UserModel.create({
+            const newUser = await UserModel.create({
               email: user.email,
               name: user.name || user.email.split("@")[0],
               image: user.image,
               googleId: account.providerAccountId,
               meetings: [],
             });
+
+            // Send welcome email to new user
+            try {
+              await sendWelcomeEmail(newUser.name, newUser.email);
+              console.log(`Welcome email sent to ${newUser.email}`);
+            } catch (emailError) {
+              console.error("Failed to send welcome email:", emailError);
+              // Don't fail the sign-in process if email fails
+            }
           } else if (existingUser && account.providerAccountId) {
             // ACCOUNT MERGING: Update existing user with Google info
             // This handles the case where user was created as guest or from meeting invitation
@@ -40,6 +50,20 @@ export const authOptions: NextAuthOptions = {
             if (!existingUser.googleId) {
               existingUser.googleId = account.providerAccountId;
               updated = true;
+
+              // Send welcome email to guest user upgrading to full account
+              try {
+                await sendWelcomeEmail(existingUser.name, existingUser.email);
+                console.log(
+                  `Welcome email sent to upgraded user ${existingUser.email}`
+                );
+              } catch (emailError) {
+                console.error(
+                  "Failed to send welcome email to upgraded user:",
+                  emailError
+                );
+                // Don't fail the sign-in process if email fails
+              }
             }
 
             // Update profile image if not present
