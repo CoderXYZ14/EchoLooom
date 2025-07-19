@@ -62,26 +62,27 @@ export async function POST(req: NextRequest) {
     });
 
     if (error) {
-      console.error("Failed to send contact email:", error);
+      console.error("Contact | Failed to send contact email:", error);
       return NextResponse.json(
         { error: "Failed to send message" },
         { status: 500 }
       );
     }
 
-    await Contact.create({
+    const contact = await Contact.create({
       name,
       email,
       details: message,
       resolved: false,
     });
 
+    console.log("Contact |  Contact message sent successfully!", contact);
     return NextResponse.json(
       { success: true, message: "Message sent successfully!" },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Contact form error:", error);
+    console.error("Contact | Contact form error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

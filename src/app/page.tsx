@@ -1596,7 +1596,28 @@ const EchoLoom = () => {
                     "Thank you! Your message has been sent successfully."
                   );
 
-                  e.currentTarget.reset();
+                  // Safely reset the form
+                  if (
+                    e.currentTarget &&
+                    typeof e.currentTarget.reset === "function"
+                  ) {
+                    try {
+                      e.currentTarget.reset();
+                    } catch (resetError) {
+                      console.warn("HomePage | Form reset failed:", resetError);
+                      // Fallback: manually clear the form fields
+                      const form = e.currentTarget as HTMLFormElement;
+                      const inputs = form.querySelectorAll("input, textarea");
+                      inputs.forEach((input) => {
+                        if (
+                          input instanceof HTMLInputElement ||
+                          input instanceof HTMLTextAreaElement
+                        ) {
+                          input.value = "";
+                        }
+                      });
+                    }
+                  }
                 } else {
                   toast.error(
                     "Error: " +

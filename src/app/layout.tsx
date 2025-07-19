@@ -80,13 +80,13 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-  // Apple Web App configuration
+
   appleWebApp: {
     title: "EchoLoom",
     capable: true,
     statusBarStyle: "default",
   },
-  // Optimized favicon configuration for Google Search
+
   icons: {
     icon: [
       { url: "/favicon.ico", type: "image/x-icon" },
