@@ -5,6 +5,7 @@ import MeetingModel from "@/models/Meeting";
 import UserModel from "@/models/User";
 import dbConnect from "@/lib/db";
 import { sendMeetingCancellationEmail } from "@/lib/email";
+import redis from "@/lib/redis";
 
 export async function DELETE(request: NextRequest) {
   try {
@@ -63,10 +64,9 @@ export async function DELETE(request: NextRequest) {
               duration: meeting.duration,
               reason: "The meeting has been cancelled by the host.",
             });
-            console.log(`Cancellation email sent to ${participant.email}`);
           } catch (emailError) {
             console.error(
-              `Failed to send cancellation email to ${participant.email}:`,
+              `DeleteMeeting | Email error for ${participant.email}:`,
               emailError
             );
             // Continue with other participants even if email fails
@@ -82,6 +82,23 @@ export async function DELETE(request: NextRequest) {
 
       // Delete the meeting document
       await MeetingModel.findByIdAndDelete(meetingId);
+
+      // Invalidate Redis cache after deleting meeting
+      try {
+        await redis.del(`user:${session.user.id}:past_meetings`);
+        await redis.del(`user:${session.user.id}:upcoming_meetings`);
+      } catch (redisError) {
+        console.error(
+          "DeleteMeeting | Redis cache invalidation failed:",
+          redisError
+        );
+      }
+
+      console.log("DeleteMeeting | Meeting deleted successfully:", {
+        meetingId,
+        title: meeting.title,
+        hostId: meeting.hostId,
+      });
 
       return NextResponse.json({
         success: true,
@@ -102,6 +119,23 @@ export async function DELETE(request: NextRequest) {
         { $pull: { meetings: meetingId } }
       );
 
+      // Invalidate Redis cache after removing meeting from history
+      try {
+        await redis.del(`user:${session.user.id}:past_meetings`);
+        await redis.del(`user:${session.user.id}:upcoming_meetings`);
+      } catch (redisError) {
+        console.error(
+          "DeleteMeeting | Redis cache invalidation failed:",
+          redisError
+        );
+      }
+
+      console.log("DeleteMeeting | Meeting removed from history:", {
+        meetingId,
+        title: meeting.title,
+        userEmail: session.user.email,
+      });
+
       return NextResponse.json({
         success: true,
         message: "Meeting removed from your history",
@@ -113,7 +147,7 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   } catch (error: unknown) {
-    console.error("Error deleting meeting:", error);
+    console.error("DeleteMeeting | General error:", error);
     return NextResponse.json(
       { error: "Failed to delete meeting" },
       { status: 500 }

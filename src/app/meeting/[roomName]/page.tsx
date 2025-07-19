@@ -10,8 +10,6 @@ export default async function MeetingPage({ params }: MeetingPageProps) {
   const { roomName } = await params;
   const subdomain = process.env.NEXT_PUBLIC_DAILY_SUBDOMAIN || "echoloom";
 
-  console.log("Meeting page - roomName:", roomName, "subdomain:", subdomain);
-
   const roomUrl = `https://${subdomain}.daily.co/${roomName}`;
 
   return <MeetingWrapper roomUrl={roomUrl} roomName={roomName} />;

@@ -19,11 +19,9 @@ export const authOptions: NextAuthOptions = {
         try {
           await dbConnect();
 
-          // Check if user exists by email (primary identifier)
           const existingUser = await UserModel.findOne({ email: user.email });
 
           if (!existingUser && account.providerAccountId) {
-            // Create new user if they don't exist
             const newUser = await UserModel.create({
               email: user.email,
               name: user.name || user.email.split("@")[0],
@@ -32,13 +30,13 @@ export const authOptions: NextAuthOptions = {
               meetings: [],
             });
 
-            // Send welcome email to new user
             try {
               await sendWelcomeEmail(newUser.name, newUser.email);
-              console.log(`Welcome email sent to ${newUser.email}`);
             } catch (emailError) {
-              console.error("Failed to send welcome email:", emailError);
-              // Don't fail the sign-in process if email fails
+              console.error(
+                "Auth | Welcome email failed for new user:",
+                emailError
+              );
             }
           } else if (existingUser && account.providerAccountId) {
             // ACCOUNT MERGING: Update existing user with Google info
@@ -46,33 +44,25 @@ export const authOptions: NextAuthOptions = {
 
             let updated = false;
 
-            // Add Google ID if not present (guest user upgrading to full account)
             if (!existingUser.googleId) {
               existingUser.googleId = account.providerAccountId;
               updated = true;
 
-              // Send welcome email to guest user upgrading to full account
               try {
                 await sendWelcomeEmail(existingUser.name, existingUser.email);
-                console.log(
-                  `Welcome email sent to upgraded user ${existingUser.email}`
-                );
               } catch (emailError) {
                 console.error(
-                  "Failed to send welcome email to upgraded user:",
+                  "Auth | Welcome email failed for upgraded user:",
                   emailError
                 );
-                // Don't fail the sign-in process if email fails
               }
             }
 
-            // Update profile image if not present
             if (!existingUser.image && user.image) {
               existingUser.image = user.image;
               updated = true;
             }
 
-            // Update name if it's generic (email prefix) or empty
             if (
               !existingUser.name ||
               existingUser.name === user.email.split("@")[0] ||
@@ -82,18 +72,14 @@ export const authOptions: NextAuthOptions = {
               updated = true;
             }
 
-            // Save if any updates were made
             if (updated) {
               await existingUser.save();
-              console.log(
-                `Account merged for ${user.email}: Guest -> Google Account`
-              );
             }
           }
 
           return true;
         } catch (error) {
-          console.error("NextAuth | signIn error:", error);
+          console.error("Auth | SignIn callback failed:", error);
           return true; // Still allow sign in even if our extra logic fails
         }
       }
@@ -108,7 +94,7 @@ export const authOptions: NextAuthOptions = {
             token.id = (dbUser._id as mongoose.Types.ObjectId).toString();
           }
         } catch (error) {
-          console.error("JWT callback error:", error);
+          console.error("Auth | JWT callback failed:", error);
         }
       }
       return token;
@@ -127,7 +113,7 @@ export const authOptions: NextAuthOptions = {
             ).toString();
           }
         } catch (error) {
-          console.error("Error fetching user ID in session:", error);
+          console.error("Auth | Session user ID fetch failed:", error);
         }
       }
       return session;

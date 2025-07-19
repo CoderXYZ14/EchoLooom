@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # Host
-Host: https://www.echoloom.live
+Host: https://echoloom.live
 
 # Sitemaps
-Sitemap: https://www.echoloom.live/sitemap.xml
+Sitemap: https://echoloom.live/sitemap.xml

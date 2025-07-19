@@ -64,7 +64,7 @@ export async function initializeChatChangeStream(
       }
     };
   } catch (error: unknown) {
-    console.error("Error initializing chat change stream:", error);
+    console.error("ChangeStreams | Chat stream initialization failed:", error);
     throw error;
   }
 }
@@ -123,7 +123,10 @@ export async function initializeParticipantChangeStream(
       }
     };
   } catch (error: unknown) {
-    console.error("Error initializing participant change stream:", error);
+    console.error(
+      "ChangeStreams | Participant stream initialization failed:",
+      error
+    );
     throw error;
   }
 }

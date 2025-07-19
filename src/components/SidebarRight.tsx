@@ -46,7 +46,6 @@ const SidebarRight: React.FC<SidebarRightProps> = ({
     if (onMeetingClick) {
       onMeetingClick(meeting, status);
     } else {
-      // Default behavior - open meeting in new tab
       window.open(`/meeting/${meeting.dailyRoomName}`, "_blank");
     }
   };

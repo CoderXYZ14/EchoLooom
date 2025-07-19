@@ -102,7 +102,7 @@ export const EditMeetingDialog: React.FC<EditMeetingDialogProps> = ({
         setFormData((prev) => ({ ...prev, participantEmails }));
       }
     } catch (error) {
-      console.error("Error fetching meeting details:", error);
+      console.error("EditMeetingDialog | Fetch meeting details failed:", error);
     } finally {
       setLoadingParticipants(false);
     }

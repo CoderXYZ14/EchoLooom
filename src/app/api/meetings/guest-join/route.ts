@@ -20,7 +20,6 @@ export async function POST(req: NextRequest) {
 
     const { name, email, roomName } = (await req.json()) as GuestJoinRequest;
 
-    // Validate required fields
     if (!name || !email || !roomName) {
       return NextResponse.json(
         { error: "Name, email, and room name are required" },
@@ -28,7 +27,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
@@ -37,7 +35,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if the meeting room exists
     const meeting = await MeetingModel.findOne({ dailyRoomName: roomName });
     if (!meeting) {
       return NextResponse.json(
@@ -46,7 +43,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if meeting has expired
     const now = new Date();
     const meetingEndTime = new Date(
       meeting.scheduledTime.getTime() + meeting.duration * 60000
@@ -59,14 +55,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create or update guest user
     const user = await createGuestUser(
       name,
       email,
       meeting._id as mongoose.Types.ObjectId
     );
 
-    // Add user to meeting participants
     await addUserToMeeting(
       (user._id as mongoose.Types.ObjectId).toString(),
       email,
@@ -74,7 +68,6 @@ export async function POST(req: NextRequest) {
       meeting._id as mongoose.Types.ObjectId
     );
 
-    // Format response
     const formattedUser = formatUserForFrontend(user, true);
 
     return NextResponse.json({
@@ -86,7 +79,7 @@ export async function POST(req: NextRequest) {
         title: meeting.title,
         roomName: meeting.dailyRoomName,
       },
-      // Include helpful message about account benefits
+
       accountUpgradeMessage:
         "Sign in with Google to save your meeting history and access more features!",
     });

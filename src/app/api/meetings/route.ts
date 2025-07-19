@@ -38,10 +38,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create Daily.co room
     const dailyRoom = await createDailyRoom(title, duration);
 
-    // Create meeting in database
     const meeting = await Meeting.create({
       title,
 
@@ -58,7 +56,6 @@ export async function POST(req: NextRequest) {
         })) || [],
     });
 
-    // Add meeting to user's meetings
     await User.findOneAndUpdate(
       { email: session.user.email },
       { $push: { meetings: meeting._id } }

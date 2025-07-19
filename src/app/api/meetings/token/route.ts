@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerAuthSession } from "@/lib/auth";
 import { createMeetingToken } from "@/lib/daily";
+import axios from "axios";
 
 interface CreateTokenRequest {
   roomName: string;
@@ -27,36 +28,34 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Use session user info
     const participantName = session.user.name || "Guest";
     const participantEmail = session.user.email || "guest@example.com";
 
-    // Verify room exists first
-    const roomResponse = await fetch(
-      `https://api.daily.co/v1/rooms/${roomName}`,
-      {
+    try {
+      await axios.get(`https://api.daily.co/v1/rooms/${roomName}`, {
         headers: {
           Authorization: `Bearer ${process.env.DAILY_API_KEY}`,
         },
-      }
-    );
-
-    if (!roomResponse.ok) {
-      if (roomResponse.status === 404) {
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
         return NextResponse.json(
           { error: "Meeting room does not exist" },
           { status: 404 }
         );
       }
-      throw new Error(`Failed to verify room: ${roomResponse.statusText}`);
+      throw new Error(
+        `Failed to verify room: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
 
-    // Create meeting token
     const tokenData = await createMeetingToken(
       roomName,
       participantName,
       participantEmail,
-      true // Default to host for now
+      true
     );
 
     return NextResponse.json(
@@ -73,7 +72,6 @@ export async function GET(req: NextRequest) {
   } catch (error: unknown) {
     console.error("Error creating meeting token:", error);
 
-    // Return more specific error messages
     if (
       error instanceof Error &&
       error.message.includes("room does not exist")
@@ -114,27 +112,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Use session email if participantEmail is not provided
     const email = participantEmail || session.user.email;
 
-    // Verify room exists first
-    const roomResponse = await fetch(
-      `https://api.daily.co/v1/rooms/${roomName}`,
-      {
+    try {
+      await axios.get(`https://api.daily.co/v1/rooms/${roomName}`, {
         headers: {
           Authorization: `Bearer ${process.env.DAILY_API_KEY}`,
         },
-      }
-    );
-
-    if (!roomResponse.ok) {
-      if (roomResponse.status === 404) {
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
         return NextResponse.json(
           { error: "Meeting room does not exist" },
           { status: 404 }
         );
       }
-      throw new Error(`Failed to verify room: ${roomResponse.statusText}`);
+      throw new Error(
+        `Failed to verify room: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
 
     // Create meeting token
@@ -159,7 +156,6 @@ export async function POST(req: NextRequest) {
   } catch (error: unknown) {
     console.error("Error creating meeting token:", error);
 
-    // Return more specific error messages
     if (
       error instanceof Error &&
       error.message.includes("room does not exist")

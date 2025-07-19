@@ -16,7 +16,7 @@ const SignInPage = () => {
     try {
       await signIn("google", { callbackUrl: "/dashboard" });
     } catch (error) {
-      console.error("Sign in error:", error);
+      console.error("SignInPage | Google sign in failed:", error);
       setIsLoading(false);
     }
   };

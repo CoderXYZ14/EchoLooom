@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import axios from "axios";
 
 import { Clock, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,6 @@ export default function MeetingStatusCheck({
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
-    // Update current time every second
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 1000);
@@ -45,7 +45,6 @@ export default function MeetingStatusCheck({
   }, []);
 
   useEffect(() => {
-    // Only fetch once per roomName unless there's an error
     if (!meetingInfo && !error) {
       fetchMeetingInfo();
     }
@@ -57,31 +56,28 @@ export default function MeetingStatusCheck({
 
       // Reduce timeout to prevent hanging - 5 seconds is enough
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      const response = await fetch(`/api/meetings/info?roomName=${roomName}`, {
-        signal: controller.signal,
-        credentials: "include", // Ensure cookies/session are included
-      });
+      const response = await axios.get(
+        `/api/meetings/info?roomName=${roomName}`,
+        {
+          signal: controller.signal,
+          withCredentials: true,
+        }
+      );
       clearTimeout(timeoutId);
 
-      const data = await response.json();
-      console.log("API response:", response.status, data);
+      const data = response.data;
 
-      if (response.ok) {
-        console.log("Meeting info received successfully:", data.meeting);
-
-        // Parse and validate the scheduled time
+      if (response.status === 200) {
         let scheduledTime = new Date(data.meeting.scheduledTime);
-        console.log("Original scheduledTime:", data.meeting.scheduledTime);
-        console.log("Parsed scheduledTime:", scheduledTime);
-        console.log("Is valid date:", !isNaN(scheduledTime.getTime()));
 
         if (isNaN(scheduledTime.getTime())) {
-          console.error("Invalid scheduledTime:", data.meeting.scheduledTime);
-          // For invalid dates, set to current time and proceed
+          console.error(
+            "MeetingStatusCheck | Invalid scheduledTime format:",
+            data.meeting.scheduledTime
+          );
           scheduledTime = new Date();
-          console.log("Using current time as fallback:", scheduledTime);
         }
 
         const meetingInfo = {
@@ -94,35 +90,24 @@ export default function MeetingStatusCheck({
           dailyRoomName: data.meeting.dailyRoomName || roomName,
           hostName: data.meeting.hostName,
           hostEmail: data.meeting.hostEmail,
-          isValidRoom: true, // Always set to true for successful responses
+          isValidRoom: true,
         };
-        console.log("Setting meeting info:", meetingInfo);
         setMeetingInfo(meetingInfo);
-        setError(null); // Clear any previous errors
+        setError(null);
       } else {
-        // If meeting not found or unauthorized, allow joining anyway
         if (response.status === 404 || response.status === 401) {
-          console.log(
-            "Meeting not found in database or unauthorized, allowing direct join"
-          );
           setError(null);
-          // For 401 errors, it's likely a session issue - proceed to meeting
-          // The Daily.co room should still exist and be joinable
           onProceed();
           return;
         }
         setError(data.error || "Failed to fetch meeting info");
       }
     } catch (err) {
-      console.error("Error fetching meeting info:", err);
-      if (err instanceof Error && err.name === "AbortError") {
-        // On timeout, allow direct join
-        console.log("Request timed out, allowing direct join");
+      console.error("MeetingStatusCheck | API fetch error:", err);
+      if (axios.isCancel(err)) {
         onProceed();
         return;
       } else {
-        // On other errors, allow direct join
-        console.log("Error fetching meeting info, allowing direct join");
         onProceed();
         return;
       }
@@ -131,17 +116,7 @@ export default function MeetingStatusCheck({
     }
   };
 
-  console.log(
-    "MeetingStatusCheck render - loading:",
-    loading,
-    "meetingInfo:",
-    !!meetingInfo,
-    "error:",
-    error
-  );
-
   if (loading) {
-    console.log("Rendering loading state");
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="text-center">
@@ -162,12 +137,6 @@ export default function MeetingStatusCheck({
   }
 
   if (error || !meetingInfo) {
-    console.log(
-      "Rendering error state - error:",
-      error,
-      "meetingInfo:",
-      !!meetingInfo
-    );
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Card className="p-8 max-w-md text-center">
@@ -186,10 +155,12 @@ export default function MeetingStatusCheck({
     );
   }
 
-  // Ensure we have valid meeting info before proceeding
   if (!meetingInfo.scheduledTime || !meetingInfo.duration) {
-    console.error("Missing required meeting data:", meetingInfo);
-    console.log("Proceeding to meeting anyway due to missing data");
+    console.error("MeetingStatusCheck | Missing required meeting data:", {
+      hasScheduledTime: !!meetingInfo.scheduledTime,
+      hasDuration: !!meetingInfo.duration,
+      meetingId: meetingInfo.id,
+    });
     onProceed();
     return null;
   }
@@ -206,22 +177,6 @@ export default function MeetingStatusCheck({
   const startsWithin15Min =
     meetingStart.getTime() - now.getTime() <= 15 * 60 * 1000 && isUpcoming;
 
-  console.log("Meeting status calculation:", {
-    meetingTitle: meetingInfo.title,
-    meetingStart: meetingStart.toISOString(),
-    meetingEnd: meetingEnd.toISOString(),
-    now: now.toISOString(),
-    isLive,
-    isUpcoming,
-    hasEnded,
-    startsWithin15Min,
-    timeUntilStart: Math.ceil(
-      (meetingStart.getTime() - now.getTime()) / (1000 * 60)
-    ),
-    isHost: meetingInfo.isHost,
-  });
-
-  // Calculate time differences
   const timeUntilStart = Math.ceil(
     (meetingStart.getTime() - now.getTime()) / (1000 * 60)
   );

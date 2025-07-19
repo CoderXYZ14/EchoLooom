@@ -23,7 +23,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Find the meeting
     const meeting = await MeetingModel.findById(meetingId);
     if (!meeting) {
       return NextResponse.json({ error: "Meeting not found" }, { status: 404 });

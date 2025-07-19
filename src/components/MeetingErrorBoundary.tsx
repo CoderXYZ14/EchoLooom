@@ -21,7 +21,7 @@ export class MeetingErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("Meeting Error Boundary:", error, errorInfo);
+    console.error("MeetingErrorBoundary | Error caught:", error, errorInfo);
   }
 
   render() {

@@ -10,6 +10,7 @@ import {
   sendMeetingUpdateEmail,
   sendMeetingCancellationEmail,
 } from "@/lib/email";
+import redis from "@/lib/redis";
 
 interface UpdateMeetingRequest {
   id: string;
@@ -38,7 +39,6 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Find the meeting first to check permissions
     const meeting = await MeetingModel.findById(id);
     if (!meeting) {
       return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
@@ -53,7 +53,6 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Check if meeting has already started or ended
     const now = new Date();
     const meetingStart = new Date(meeting.scheduledTime);
 
@@ -121,7 +120,6 @@ export async function PUT(request: NextRequest) {
     }
 
     if (participantEmails !== undefined) {
-      // Process participant emails
       const participants = [];
       if (participantEmails.trim()) {
         const emails = participantEmails
@@ -129,7 +127,6 @@ export async function PUT(request: NextRequest) {
           .map((email) => email.trim())
           .filter((email) => email.length > 0);
 
-        // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         for (const email of emails) {
           if (!emailRegex.test(email)) {
@@ -140,7 +137,6 @@ export async function PUT(request: NextRequest) {
           }
         }
 
-        // Remove duplicates and host email
         const uniqueEmails = [...new Set(emails)].filter(
           (email) => email !== session.user.email
         );
@@ -148,23 +144,17 @@ export async function PUT(request: NextRequest) {
         for (const email of uniqueEmails) {
           participants.push({
             email,
-            name: email.split("@")[0], // Use email prefix as default name
+            name: email.split("@")[0],
             joined: false,
           });
         }
       }
 
-      // Remove meeting from old participants who are no longer invited
       const oldParticipantEmails = meeting.participants.map((p) => p.email);
       const newParticipantEmails = participants.map((p) => p.email);
       const removedEmails = oldParticipantEmails.filter(
         (email) => !newParticipantEmails.includes(email)
       );
-
-      console.log("Old participant emails:", oldParticipantEmails);
-      console.log("New participant emails:", newParticipantEmails);
-      console.log("Removed emails:", removedEmails);
-
       // Send cancellation emails to removed participants
       if (removedEmails.length > 0) {
         const hostName = session.user.name || session.user.email || "Host";
@@ -184,12 +174,9 @@ export async function PUT(request: NextRequest) {
                 duration: meeting.duration,
                 reason: "You have been removed from this meeting by the host.",
               });
-              console.log(
-                `Removal notification sent to ${removedParticipant.email}`
-              );
             } catch (emailError) {
               console.error(
-                `Failed to send removal notification to ${removedParticipant.email}:`,
+                `UpdateMeeting | Removal email error for ${removedParticipant.email}:`,
                 emailError
               );
               // Continue with other participants even if email fails
@@ -208,7 +195,6 @@ export async function PUT(request: NextRequest) {
       updateData.participants = participants;
     }
 
-    // Update the meeting
     const updatedMeeting = await MeetingModel.findByIdAndUpdate(
       id,
       updateData,
@@ -232,20 +218,17 @@ export async function PUT(request: NextRequest) {
 
       for (const participant of updateData.participants) {
         try {
-          // Check if user exists
           let existingUser = await UserModel.findOne({
             email: participant.email,
           });
 
           if (!existingUser) {
-            // Create new user with email only
             existingUser = await UserModel.create({
               email: participant.email,
               name: participant.name,
               meetings: [meeting._id as mongoose.Types.ObjectId],
             });
           } else {
-            // Add meeting to existing user's meetings if not already there
             const meetingId = meeting._id as mongoose.Types.ObjectId;
             if (!existingUser.meetings.includes(meetingId)) {
               existingUser.meetings.push(meetingId);
@@ -254,14 +237,13 @@ export async function PUT(request: NextRequest) {
           }
         } catch (error) {
           console.error(
-            `Error handling participant ${participant.email}:`,
+            `UpdateMeeting | Participant error for ${participant.email}:`,
             error
           );
           // Continue with other participants even if one fails
         }
       }
 
-      // Send invitation emails to newly added participants only
       if (addedParticipants.length > 0) {
         const meetingLink = `${
           process.env.NEXT_PUBLIC_BASE_URL || "https://echoloom.live"
@@ -278,12 +260,9 @@ export async function PUT(request: NextRequest) {
               duration: updatedMeeting.duration,
               meetingLink,
             });
-            console.log(
-              `Invitation email sent to new participant ${participant.email}`
-            );
           } catch (emailError) {
             console.error(
-              `Failed to send invitation email to ${participant.email}:`,
+              `UpdateMeeting | Invitation email error for ${participant.email}:`,
               emailError
             );
             // Continue with other participants even if email fails
@@ -319,18 +298,31 @@ export async function PUT(request: NextRequest) {
             meetingLink,
             changedFields,
           });
-          console.log(
-            `Update email sent to existing participant ${participant.email}`
-          );
         } catch (emailError) {
           console.error(
-            `Failed to send update email to ${participant.email}:`,
+            `UpdateMeeting | Update email error for ${participant.email}:`,
             emailError
           );
           // Continue with other participants even if email fails
         }
       }
     }
+
+    // Invalidate Redis cache after updating meeting
+    try {
+      await redis.del(`user:${session.user.id}:past_meetings`);
+      await redis.del(`user:${session.user.id}:upcoming_meetings`);
+    } catch (redisError) {
+      console.error(
+        "UpdateMeeting | Redis cache invalidation failed:",
+        redisError
+      );
+    }
+
+    console.log("UpdateMeeting | Meeting updated successfully for user:", {
+      meetingId: id,
+      userEmail: session.user.email,
+    });
 
     return NextResponse.json({
       success: true,
@@ -345,7 +337,7 @@ export async function PUT(request: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error("Error updating meeting:", error);
+    console.error("UpdateMeeting | General error:", error);
     return NextResponse.json(
       { error: "Failed to update meeting" },
       { status: 500 }

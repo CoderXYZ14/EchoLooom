@@ -67,7 +67,6 @@ export const metadata: Metadata = {
     title: "EchoLoom — Smarter Video Calls with Personal Audio Control",
     description:
       "Meet. Control. Focus. EchoLoom gives you full control over your video calls — from volume sliders to in-meet chat and more.",
-
     creator: "@coderxyz14",
   },
   robots: {
@@ -81,15 +80,24 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  // Apple Web App configuration
+  appleWebApp: {
+    title: "EchoLoom",
+    capable: true,
+    statusBarStyle: "default",
+  },
+  // Optimized favicon configuration for Google Search
   icons: {
     icon: [
-      { url: "/favicon.svg", type: "image/x-icon" },
-      { url: "/favicon.svg", type: "image/png", sizes: "96x96" },
-      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", type: "image/x-icon" },
+      { url: "/favicon.png", type: "image/png", sizes: "32x32" }, // Use the main favicon.png
+      { url: "/icon0.svg", type: "image/svg+xml" },
     ],
-    apple: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    apple: [{ url: "/apple-icon.png", sizes: "180x180" }],
+    shortcut: "/favicon.ico",
   },
+  // Add web app manifest
+  manifest: "/manifest.json",
   authors: [{ name: "Shahwaiz Islam" }],
   alternates: {
     canonical: "https://echoloom.live/",
@@ -104,8 +112,28 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/favicon.svg" />
+        {/* PRIMARY FAVICON - This is the most important for Google Search */}
+        <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+
+        {/* Additional favicon formats - use your existing files */}
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+        <link rel="icon" type="image/svg+xml" href="/icon0.svg" />
+
+        {/* Apple touch icons */}
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-icon.png" />
+
+        {/* Web App Manifest */}
+        <link rel="manifest" href="/manifest.json" />
+
+        {/* Web app meta tags */}
+        <meta name="apple-mobile-web-app-title" content="EchoLoom" />
+        <meta name="application-name" content="EchoLoom" />
+        <meta name="theme-color" content="#ffffff" />
+        <meta name="msapplication-TileColor" content="#ffffff" />
+
+        {/* Canonical URL */}
         <link rel="canonical" href="https://echoloom.live" />
+
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -115,7 +143,7 @@ export default function RootLayout({
               name: "EchoLoom",
               operatingSystem: "All",
               applicationCategory: "CommunicationApplication",
-              url: "",
+              url: "https://echoloom.live",
               description:
                 "EchoLoom is a video conferencing platform that puts users in control — adjust meeting volume, join in real-time, and stay productive without audio chaos.",
               keywords: [

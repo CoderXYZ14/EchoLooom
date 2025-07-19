@@ -135,7 +135,7 @@ export default function DashboardLayout({
         setPastMeetings(response.data.meetings);
       }
     } catch (error) {
-      console.error("Error fetching past meetings:", error);
+      console.error("DashboardLayout | Past meetings fetch failed:", error);
     } finally {
       setLoadingPastMeetings(false);
     }
@@ -149,7 +149,7 @@ export default function DashboardLayout({
         setUpcomingMeetings(response.data.meetings);
       }
     } catch (error) {
-      console.error("Error fetching upcoming meetings:", error);
+      console.error("DashboardLayout | Upcoming meetings fetch failed:", error);
     } finally {
       setLoadingUpcomingMeetings(false);
     }
@@ -293,7 +293,7 @@ export default function DashboardLayout({
         throw new Error(response.data.error || "Failed to update meeting");
       }
     } catch (error: unknown) {
-      console.error("Error updating meeting:", error);
+      console.error("DashboardLayout | Meeting update failed:", error);
       toast.error("Failed to update meeting");
       // Revert optimistic update
       setUpcomingMeetings(originalMeetings);
@@ -326,7 +326,7 @@ export default function DashboardLayout({
         throw new Error(response.data.error || "Failed to delete meeting");
       }
     } catch (error: unknown) {
-      console.error("Error deleting meeting:", error);
+      console.error("DashboardLayout | Meeting delete failed:", error);
       toast.error("Failed to delete meeting");
       // Revert optimistic update
       setUpcomingMeetings(originalMeetings);

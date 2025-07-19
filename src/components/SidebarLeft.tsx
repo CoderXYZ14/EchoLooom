@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { useSession, signOut } from "next-auth/react";
+import Image from "next/image";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 
@@ -184,7 +185,7 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({
               ))
             )}
           </div>
-          {!loadingPastMeetings && pastMeetings.length >= 5 && (
+          {!loadingPastMeetings && pastMeetings.length > 0 && (
             <Link href="/dashboard/meeting-history">
               <Button
                 variant="ghost"
@@ -203,9 +204,11 @@ const SidebarLeft: React.FC<SidebarLeftProps> = ({
         <div className="flex items-center space-x-2">
           <Avatar className="w-8 h-8">
             {session?.user?.image ? (
-              <img
+              <Image
                 src={session.user.image}
                 alt={session.user.name || "User"}
+                width={32}
+                height={32}
                 className="w-full h-full rounded-full object-cover"
               />
             ) : (

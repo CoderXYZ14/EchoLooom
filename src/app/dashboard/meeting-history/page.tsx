@@ -61,7 +61,6 @@ const MeetingHistoryPage = () => {
   }, []);
 
   useEffect(() => {
-    // Filter meetings based on search term
     const filtered = meetings.filter(
       (meeting) =>
         meeting.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -78,7 +77,7 @@ const MeetingHistoryPage = () => {
         setMeetings(response.data.meetings);
       }
     } catch (error: unknown) {
-      console.error("Error fetching meeting history:", error);
+      console.error("MeetingHistoryPage | Fetch history failed:", error);
     } finally {
       setLoading(false);
     }
@@ -105,19 +104,16 @@ const MeetingHistoryPage = () => {
       );
 
       if (response.data.success) {
-        // Remove the meeting from both state arrays
         setMeetings((prev) =>
           prev.filter((meeting) => meeting.id !== meetingId)
         );
         setFilteredMeetings((prev) =>
           prev.filter((meeting) => meeting.id !== meetingId)
         );
-        setExpandedMeeting(null); // Close expanded details
+        setExpandedMeeting(null);
 
-        // Update the sidebar by removing the meeting from past meetings
         removePastMeeting(meetingId);
 
-        // Show success message
         toast.success(
           response.data.message || "Operation completed successfully"
         );
@@ -125,7 +121,7 @@ const MeetingHistoryPage = () => {
         toast.error(response.data.error || `Failed to ${actionText}`);
       }
     } catch (error: unknown) {
-      console.error("Error deleting meeting:", error);
+      console.error("MeetingHistoryPage | Delete meeting failed:", error);
       toast.error(
         `Failed to ${actionText}: ${
           (error as Error).message || "Unknown error"
@@ -148,24 +144,21 @@ const MeetingHistoryPage = () => {
     try {
       setClearingAll(true);
 
-      // Delete all meetings one by one
       const deletePromises = meetings.map((meeting) =>
         axios.delete(`/api/meetings/delete?id=${meeting.id}`)
       );
 
       await Promise.all(deletePromises);
 
-      // Clear the state
       setMeetings([]);
       setFilteredMeetings([]);
       setExpandedMeeting(null);
 
-      // Update the sidebar by clearing all past meetings
       clearAllPastMeetings();
 
       toast.success("All meeting history cleared successfully");
     } catch (error: unknown) {
-      console.error("Error clearing all history:", error);
+      console.error("MeetingHistoryPage | Clear all history failed:", error);
       toast.error("Failed to clear all history");
     } finally {
       setClearingAll(false);
@@ -199,7 +192,6 @@ const MeetingHistoryPage = () => {
   return (
     <div className="flex-1 p-4 overflow-y-auto">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <motion.div
           className="mb-6"
           initial={{ opacity: 0, y: 20 }}
@@ -223,7 +215,6 @@ const MeetingHistoryPage = () => {
               </div>
             </div>
 
-            {/* Clear All History Button */}
             {meetings.length > 0 && (
               <Button
                 variant="destructive"
@@ -255,7 +246,6 @@ const MeetingHistoryPage = () => {
             )}
           </div>
 
-          {/* Search */}
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -267,7 +257,6 @@ const MeetingHistoryPage = () => {
           </div>
         </motion.div>
 
-        {/* Content */}
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <motion.div
@@ -322,7 +311,6 @@ const MeetingHistoryPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: dateIndex * 0.1 }}
               >
-                {/* Date Header */}
                 <div className="flex items-center gap-3 mb-3">
                   <h2 className="text-base font-semibold text-foreground">
                     {date}
@@ -333,7 +321,6 @@ const MeetingHistoryPage = () => {
                   </Badge>
                 </div>
 
-                {/* Meetings for this date */}
                 <div className="space-y-2">
                   {groupedMeetings[date].map((meeting, meetingIndex) => (
                     <motion.div
@@ -403,7 +390,6 @@ const MeetingHistoryPage = () => {
                           </div>
                         </div>
 
-                        {/* Expandable Details */}
                         {expandedMeeting === meeting.id && (
                           <motion.div
                             initial={{ opacity: 0, height: 0 }}
@@ -413,7 +399,6 @@ const MeetingHistoryPage = () => {
                             className="mt-3 pt-3 border-t border-border/50"
                           >
                             <div className="space-y-3">
-                              {/* Meeting Details */}
                               <div>
                                 <h4 className="text-xs font-semibold text-foreground mb-2">
                                   Meeting Details
@@ -454,13 +439,11 @@ const MeetingHistoryPage = () => {
                                 </div>
                               </div>
 
-                              {/* Participants */}
                               <div>
                                 <h4 className="text-xs font-semibold text-foreground mb-2">
                                   Participants ({meeting.participants})
                                 </h4>
                                 <div className="space-y-1">
-                                  {/* Host */}
                                   <div className="flex items-center gap-2 p-2 rounded-md bg-muted/30">
                                     <div className="w-6 h-6 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
                                       <Crown className="w-3 h-3 text-white" />
@@ -485,7 +468,6 @@ const MeetingHistoryPage = () => {
                                     </Badge>
                                   </div>
 
-                                  {/* Other Participants */}
                                   {meeting.participantDetails.map(
                                     (participant, index) => (
                                       <div
@@ -527,7 +509,6 @@ const MeetingHistoryPage = () => {
                                 </div>
                               </div>
 
-                              {/* Delete Section */}
                               <div className="pt-3 border-t border-border/50">
                                 <div className="flex items-center justify-between">
                                   <div>

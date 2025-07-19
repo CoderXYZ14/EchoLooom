@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "motion/react";
+import axios from "axios";
+import Image from "next/image";
 import {
   Volume2,
   MessageSquare,
@@ -22,7 +24,6 @@ import {
   Mic,
   MicOff,
   Globe,
-  Star,
   ArrowUpRight,
   Menu,
   X,
@@ -42,6 +43,7 @@ import { useTheme } from "next-themes";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { SOCIAL_LINKS, URLS } from "@/lib/links";
+import { toast } from "sonner";
 
 const EchoLoom = () => {
   const { theme, setTheme } = useTheme();
@@ -239,8 +241,8 @@ const EchoLoom = () => {
       ),
     },
     {
-      title: "Smart Noise Cancellation",
-      description: "AI-powered background noise removal",
+      title: "Minimize Meeting Noise",
+      description: "Low the meeting voice so u can enjoy your favorite music",
       icon: MicOff,
       className: "md:col-span-2",
       content: (
@@ -306,67 +308,67 @@ const EchoLoom = () => {
     {
       number: "03",
       title: "Take control",
-      subtitle: "Individual audio control",
+      subtitle: "Meeting audio control",
       description:
-        "Revolutionary per-participant volume controls. Finally, focus on voices that matter most in your meetings.",
+        "Revolutionary meeting volume controls. Finally, focus on voices that matter most in your meetings.",
       icon: Volume2,
       gradient: "from-purple-400 to-pink-400",
     },
     {
       number: "04",
       title: "Collaborate seamlessly",
-      subtitle: "Chat, share, record",
+      subtitle: "Chat & share",
       description:
-        "Real-time chat, screen sharing, and session recording. Everything your team needs to stay productive.",
+        "Real-time chat, video calling & screen sharing. Everything your team needs to stay productive.",
       icon: Users,
       gradient: "from-pink-400 to-rose-400",
     },
   ];
 
-  const testimonials = [
-    {
-      name: "Sarah Chen",
-      role: "Head of Engineering",
-      company: "Stripe",
-      quote:
-        "EchoLoom's individual volume control is revolutionary. It's eliminated meeting fatigue for our entire engineering team. We've cut meeting overrun by 40%.",
-      avatar:
-        "https://images.unsplash.com/photo-1494790108755-2616b612c633?w=150&h=150&fit=crop&crop=face",
-      rating: 5,
-      verified: true,
-    },
-    {
-      name: "Marcus Johnson",
-      role: "Product Manager",
-      company: "Notion",
-      quote:
-        "Finally, a meeting tool that gets it right. Clean, fast, and actually useful. Our product reviews are now 60% more efficient.",
-      avatar:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-      rating: 5,
-      verified: true,
-    },
-    {
-      name: "Elena Rodriguez",
-      role: "Design Lead",
-      company: "Figma",
-      quote:
-        "The best meeting experience we've had. Our design reviews are now actually productive. The audio clarity is unmatched.",
-      avatar:
-        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-      rating: 5,
-      verified: true,
-    },
-  ];
+  // const testimonials = [
+  //   {
+  //     name: "Sarah Chen",
+  //     role: "Head of Engineering",
+  //     company: "Stripe",
+  //     quote:
+  //       "EchoLoom's individual volume control is revolutionary. It's eliminated meeting fatigue for our entire engineering team. We've cut meeting overrun by 40%.",
+  //     avatar:
+  //       "https://images.unsplash.com/photo-1494790108755-2616b612c633?w=150&h=150&fit=crop&crop=face",
+  //     rating: 5,
+  //     verified: true,
+  //   },
+  //   {
+  //     name: "Marcus Johnson",
+  //     role: "Product Manager",
+  //     company: "Notion",
+  //     quote:
+  //       "Finally, a meeting tool that gets it right. Clean, fast, and actually useful. Our product reviews are now 60% more efficient.",
+  //     avatar:
+  //       "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+  //     rating: 5,
+  //     verified: true,
+  //   },
+  //   {
+  //     name: "Elena Rodriguez",
+  //     role: "Design Lead",
+  //     company: "Figma",
+  //     quote:
+  //       "The best meeting experience we've had. Our design reviews are now actually productive. The audio clarity is unmatched.",
+  //     avatar:
+  //       "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
+  //     rating: 5,
+  //     verified: true,
+  //   },
+  // ];
 
-  const companies = [
-    { name: "Stripe", logo: "S" },
-    { name: "Notion", logo: "N" },
-    { name: "Figma", logo: "F" },
-    { name: "Vercel", logo: "V" },
-    { name: "Linear", logo: "L" },
-    { name: "GitHub", logo: "G" },
-  ];
+  // const companies = [
+  //   { name: "Stripe", logo: "S" },
+  //   { name: "Notion", logo: "N" },
+  //   { name: "Figma", logo: "F" },
+  //   { name: "Vercel", logo: "V" },
+  //   { name: "Linear", logo: "L" },
+  //   { name: "GitHub", logo: "G" },
+  // ];
 
   const MovingOrb = () => (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -529,9 +531,11 @@ const EchoLoom = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <img
+                    <Image
                       src={session.user?.image || "/default-avatar.png"}
                       alt={session.user?.name || "User"}
+                      width={32}
+                      height={32}
                       className="w-8 h-8 rounded-full border-2 border-gray-200 dark:border-white/20"
                     />
                   </motion.button>
@@ -658,9 +662,11 @@ const EchoLoom = () => {
                   {session ? (
                     <div className="space-y-3">
                       <div className="flex items-center gap-3 p-3 bg-white/50 dark:bg-white/5 rounded-xl">
-                        <img
+                        <Image
                           src={session.user?.image || "/default-avatar.png"}
                           alt={session.user?.name || "User"}
+                          width={32}
+                          height={32}
                           className="w-8 h-8 rounded-full"
                         />
                         <div>
@@ -1148,7 +1154,7 @@ const EchoLoom = () => {
       </motion.section>
 
       {/* Testimonials Section */}
-      <motion.section
+      {/* <motion.section
         id="testimonials"
         className="relative py-32 px-6 bg-white dark:bg-[#0F0F0F]"
         initial="initial"
@@ -1173,7 +1179,7 @@ const EchoLoom = () => {
               Loved by{" "}
               <span className="relative">
                 <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-                  10,000+
+                  100+
                 </span>
                 <motion.div
                   className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-yellow-400/50 to-orange-500/50 rounded-full"
@@ -1190,7 +1196,7 @@ const EchoLoom = () => {
               meetings
             </p>
 
-            {/* Company Logos */}
+            
             <motion.div
               className="flex items-center justify-center gap-8 mb-16 opacity-60"
               variants={fadeInUp}
@@ -1230,10 +1236,10 @@ const EchoLoom = () => {
                     boxShadow: "0 10px 40px rgba(0, 0, 0, 0.12)",
                   }}
                 >
-                  {/* Animated background */}
+                 
                   <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-blue-500/5 to-purple-500/5 dark:from-cyan-500/10 dark:via-blue-500/10 dark:to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl" />
 
-                  {/* Rating stars */}
+                
                   <div className="flex items-center gap-1 mb-6 relative z-10">
                     {[...Array(testimonial.rating)].map((_, i) => (
                       <motion.div
@@ -1256,7 +1262,7 @@ const EchoLoom = () => {
                     )}
                   </div>
 
-                  {/* Quote */}
+                 
                   <blockquote className="relative z-10 text-gray-700 dark:text-gray-300 leading-relaxed text-lg mb-8 font-medium">
                     <span className="text-4xl text-gray-200 dark:text-white/20 absolute -top-2 -left-1">
                       &quot;
@@ -1267,7 +1273,7 @@ const EchoLoom = () => {
                     </span>
                   </blockquote>
 
-                  {/* Profile */}
+                  
                   <div className="relative z-10 flex items-center gap-4">
                     <motion.div
                       className="relative"
@@ -1307,7 +1313,7 @@ const EchoLoom = () => {
         </div>
 
         <CurvedDivider className="text-gray-50 dark:text-[#121212]" />
-      </motion.section>
+      </motion.section> */}
 
       {/* Book a Meeting - Modern CTA Section */}
       <motion.section
@@ -1473,7 +1479,7 @@ const EchoLoom = () => {
                       Get started today
                     </h3>
                     <p className="text-gray-600 dark:text-gray-400">
-                      Join 200+ companies already on the waitlist
+                      Join 100+ companies already on the waitlist
                     </p>
                   </div>
 
@@ -1522,7 +1528,7 @@ const EchoLoom = () => {
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400 ml-2">
                         <span className="text-gray-900 dark:text-white font-semibold">
-                          200+
+                          100+
                         </span>{" "}
                         teams waiting
                       </p>
@@ -1569,10 +1575,40 @@ const EchoLoom = () => {
               boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
             }}
             transition={{ duration: 0.3 }}
-            onSubmit={(e) => {
+            onSubmit={async (e) => {
               e.preventDefault();
               setIsLoading(true);
-              setTimeout(() => setIsLoading(false), 2000);
+
+              const formData = new FormData(e.currentTarget);
+              const name = formData.get("name") as string;
+              const email = formData.get("email") as string;
+              const message = formData.get("message") as string;
+
+              try {
+                const response = await axios.post("/api/contact", {
+                  name,
+                  email,
+                  message,
+                });
+
+                if (response.data.success) {
+                  toast.success(
+                    "Thank you! Your message has been sent successfully."
+                  );
+
+                  e.currentTarget.reset();
+                } else {
+                  toast.error(
+                    "Error: " +
+                      (response.data.error || "Failed to send message")
+                  );
+                }
+              } catch (error) {
+                console.error("HomePage | Contact form failed:", error);
+                toast.error("Error: Failed to send message. Please try again.");
+              } finally {
+                setIsLoading(false);
+              }
             }}
           >
             <div className="space-y-6">
@@ -1586,8 +1622,10 @@ const EchoLoom = () => {
                   </Label>
                   <Input
                     id="name"
+                    name="name"
                     placeholder="Enter your full name"
                     className="h-12 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-cyan-500/50 focus:ring-cyan-500/20 rounded-xl"
+                    required
                   />
                 </div>
 
@@ -1600,9 +1638,11 @@ const EchoLoom = () => {
                   </Label>
                   <Input
                     id="email"
+                    name="email"
                     type="email"
                     placeholder="your@company.com"
                     className="h-12 bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-cyan-500/50 focus:ring-cyan-500/20 rounded-xl"
+                    required
                   />
                 </div>
               </div>
@@ -1616,9 +1656,11 @@ const EchoLoom = () => {
                 </Label>
                 <Textarea
                   id="message"
+                  name="message"
                   placeholder="Tell us about your project, questions, or how we can help..."
                   rows={4}
                   className="bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-cyan-500/50 focus:ring-cyan-500/20 rounded-xl resize-none"
+                  required
                 />
               </div>
 

@@ -7,6 +7,7 @@ import { Meeting } from "@/models/Meeting";
 import { User } from "@/models/User";
 import dbConnect from "@/lib/db";
 import mongoose from "mongoose";
+import redis from "@/lib/redis";
 
 // Interface for populated meeting data
 interface PopulatedMeeting extends Omit<Meeting, "hostId"> {
@@ -24,6 +25,23 @@ export async function GET() {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+    const cacheKey = `user:${userId}:upcoming_meetings`;
+
+    // Try to get from Redis cache first
+    try {
+      const cachedMeetings = await redis.get(cacheKey);
+      if (cachedMeetings) {
+        return NextResponse.json({
+          success: true,
+          meetings: cachedMeetings,
+          cached: true,
+        });
+      }
+    } catch (redisError) {
+      console.error("UpcomingMeetings | Redis cache error:", redisError);
     }
 
     await dbConnect();
@@ -106,13 +124,26 @@ export async function GET() {
       }
     );
 
+    // Cache the formatted meetings in Redis for 3 hours
+    try {
+      await redis.setex(cacheKey, 10800, JSON.stringify(formattedMeetings));
+    } catch (redisError) {
+      console.error("UpcomingMeetings | Redis cache save error:", redisError);
+    }
+
+    console.log("UpcomingMeetings | Fetched successfully:", {
+      userId,
+      count: formattedMeetings.length,
+      userEmail: session.user.email,
+    });
+
     return NextResponse.json({
       success: true,
       meetings: formattedMeetings,
       total: formattedMeetings.length,
     });
   } catch (error: unknown) {
-    console.error("Error fetching upcoming meetings:", error);
+    console.error("UpcomingMeetings | General error:", error);
     return NextResponse.json(
       { error: "Failed to fetch upcoming meetings" },
       { status: 500 }

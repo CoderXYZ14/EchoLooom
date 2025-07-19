@@ -21,7 +21,7 @@ export interface Meeting extends Document {
 }
 
 const ParticipantSchema = new Schema({
-  userId: { type: String, required: false }, // Optional - filled when user joins
+  userId: { type: String, required: false },
   email: { type: String, required: true },
   name: { type: String, required: true },
   joined: { type: Boolean, default: false },

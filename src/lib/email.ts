@@ -8,9 +8,6 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendWelcomeEmail = async (name: string, email: string) => {
   try {
-    console.log("About to send welcome email", { name, email });
-    console.log("API Key exists:", !!process.env.RESEND_API_KEY);
-
     const { data, error } = await resend.emails.send({
       from: "EchoLoom <no-reply@echoloom.live>",
       to: [email],
@@ -21,14 +18,14 @@ export const sendWelcomeEmail = async (name: string, email: string) => {
     });
 
     if (error) {
-      console.error("Resend API error:", error);
+      console.error("WelcomeEmail | Resend API error:", error);
       return { success: false, error };
     }
 
-    console.log("Welcome email sent successfully", data);
+    console.log("WelcomeEmail | Email sent successfully to:", email);
     return { success: true, data };
   } catch (error) {
-    console.error("Failed to send welcome email:", error);
+    console.error("WelcomeEmail | General error:", error);
     return { success: false, error };
   }
 };
@@ -51,12 +48,6 @@ export const sendMeetingInviteEmail = async ({
   meetingLink: string;
 }) => {
   try {
-    console.log("About to send meeting invite email", {
-      participantName,
-      participantEmail,
-      meetingTitle,
-    });
-
     const { data, error } = await resend.emails.send({
       from: "EchoLoom <meetings@echoloom.live>",
       to: [participantEmail],
@@ -72,14 +63,17 @@ export const sendMeetingInviteEmail = async ({
     });
 
     if (error) {
-      console.error("Resend API error:", error);
+      console.error("MeetingInviteEmail | Resend API error:", error);
       return { success: false, error };
     }
 
-    console.log("Meeting invite email sent successfully", data);
+    console.log(
+      "MeetingInviteEmail | Email sent successfully to:",
+      participantEmail
+    );
     return { success: true, data };
   } catch (error) {
-    console.error("Failed to send meeting invite email:", error);
+    console.error("MeetingInviteEmail | General error:", error);
     return { success: false, error };
   }
 };
@@ -104,13 +98,6 @@ export const sendMeetingUpdateEmail = async ({
   changedFields: string[];
 }) => {
   try {
-    console.log("About to send meeting update email", {
-      participantName,
-      participantEmail,
-      meetingTitle,
-      changedFields,
-    });
-
     const { data, error } = await resend.emails.send({
       from: "EchoLoom <meetings@echoloom.live>",
       to: [participantEmail],
@@ -127,14 +114,17 @@ export const sendMeetingUpdateEmail = async ({
     });
 
     if (error) {
-      console.error("Resend API error:", error);
+      console.error("MeetingUpdateEmail | Resend API error:", error);
       return { success: false, error };
     }
 
-    console.log("Meeting update email sent successfully", data);
+    console.log(
+      "MeetingUpdateEmail | Email sent successfully to:",
+      participantEmail
+    );
     return { success: true, data };
   } catch (error) {
-    console.error("Failed to send meeting update email:", error);
+    console.error("MeetingUpdateEmail | General error:", error);
     return { success: false, error };
   }
 };
@@ -157,12 +147,6 @@ export const sendMeetingCancellationEmail = async ({
   reason?: string;
 }) => {
   try {
-    console.log("About to send meeting cancellation email", {
-      participantName,
-      participantEmail,
-      meetingTitle,
-    });
-
     const { data, error } = await resend.emails.send({
       from: "EchoLoom <meetings@echoloom.live>",
       to: [participantEmail],
@@ -178,14 +162,17 @@ export const sendMeetingCancellationEmail = async ({
     });
 
     if (error) {
-      console.error("Resend API error:", error);
+      console.error("MeetingCancellationEmail | Resend API error:", error);
       return { success: false, error };
     }
 
-    console.log("Meeting cancellation email sent successfully", data);
+    console.log(
+      "MeetingCancellationEmail | Email sent successfully to:",
+      participantEmail
+    );
     return { success: true, data };
   } catch (error) {
-    console.error("Failed to send meeting cancellation email:", error);
+    console.error("MeetingCancellationEmail | General error:", error);
     return { success: false, error };
   }
 };

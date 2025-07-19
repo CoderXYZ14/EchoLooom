@@ -19,19 +19,15 @@ export async function createGuestUser(
 ) {
   await dbConnect();
 
-  // Check if user exists
   let user = await UserModel.findOne({ email });
 
   if (!user) {
-    // Create new guest user
     user = await UserModel.create({
       email,
       name,
       meetings: [meetingId],
-      // No googleId for guest users - will be added when they sign up
     });
   } else {
-    // Update existing user
     if (user.name !== name) {
       user.name = name;
     }
@@ -44,16 +40,10 @@ export async function createGuestUser(
   return user;
 }
 
-/**
- * Checks if a user is a guest (no Google ID)
- */
 export function isGuestUser(user: User): boolean {
   return !user.googleId;
 }
 
-/**
- * Gets meeting history for both guest and authenticated users
- */
 export async function getUserMeetingHistory(email: string) {
   await dbConnect();
 
@@ -109,7 +99,6 @@ export async function mergeGuestAccount(
     updated = true;
   }
 
-  // Update name if it's generic or different
   if (
     !user.name ||
     user.name === email.split("@")[0] ||
@@ -126,9 +115,6 @@ export async function mergeGuestAccount(
   return user;
 }
 
-/**
- * Adds a user to a meeting as a participant
- */
 export async function addUserToMeeting(
   userId: string,
   email: string,
@@ -142,7 +128,6 @@ export async function addUserToMeeting(
     throw new Error("Meeting not found");
   }
 
-  // Check if user is already a participant
   const existingParticipant = meeting.participants.find(
     (p) => p.email === email
   );

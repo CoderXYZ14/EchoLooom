@@ -7,6 +7,7 @@ import { Meeting } from "@/models/Meeting";
 import { User } from "@/models/User";
 import dbConnect from "@/lib/db";
 import mongoose from "mongoose";
+import redis from "@/lib/redis";
 
 // Interface for populated meeting data
 interface PopulatedMeeting extends Omit<Meeting, "hostId"> {
@@ -24,6 +25,23 @@ export async function GET() {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+    const cacheKey = `user:${userId}:past_meetings`;
+
+    // Try to get from Redis cache first
+    try {
+      const cachedMeetings = await redis.get(cacheKey);
+      if (cachedMeetings) {
+        return NextResponse.json({
+          success: true,
+          meetings: cachedMeetings,
+          cached: true,
+        });
+      }
+    } catch (redisError) {
+      console.error("PastMeetings | Redis cache error:", redisError);
     }
 
     await dbConnect();
@@ -48,7 +66,6 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Filter past meetings (meetings that have already ended)
     const now = new Date();
     const allPastMeetings = user.meetings.filter(
       (meeting: PopulatedMeeting) => {
@@ -101,9 +118,17 @@ export async function GET() {
         scheduledTime: meeting.scheduledTime,
         dailyRoomName: meeting.dailyRoomName,
         isHost: meeting.hostId._id?.toString() === session.user.id,
-        participants: (meeting.participants?.length || 0) + 1, // +1 for the host/user
+        participants: (meeting.participants?.length || 0) + 1,
       };
     });
+
+    try {
+      await redis.setex(cacheKey, 10800, JSON.stringify(formattedMeetings));
+    } catch (redisError) {
+      console.error("PastMeetings | Redis cache save error:", redisError);
+    }
+
+    console.log("PastMeetings | Fetched successfully for user:", userId);
 
     return NextResponse.json({
       success: true,
@@ -111,7 +136,7 @@ export async function GET() {
       total: allPastMeetings.length,
     });
   } catch (error: unknown) {
-    console.error("Error fetching past meetings:", error);
+    console.error("PastMeetings | General error:", error);
     return NextResponse.json(
       { error: "Failed to fetch past meetings" },
       { status: 500 }

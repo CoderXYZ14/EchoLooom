@@ -102,7 +102,7 @@ const EchoLoomDashboard = () => {
       window.open(`/meeting/${roomName}`, "_blank");
       closeModal();
     } catch (error: unknown) {
-      console.error("Error joining meeting:", error);
+      console.error("DashboardPage | Join meeting failed:", error);
       toast.error("Failed to join meeting");
     } finally {
       setIsJoiningMeeting(false);
@@ -130,7 +130,7 @@ const EchoLoomDashboard = () => {
         toast.error(response.data.error || "Failed to create meeting");
       }
     } catch (error) {
-      console.error("Error creating meeting:", error);
+      console.error("DashboardPage | Create meeting failed:", error);
       toast.error("Failed to create meeting");
     } finally {
       setIsCreatingMeeting(false);
@@ -165,7 +165,7 @@ const EchoLoomDashboard = () => {
         toast.error(response.data.error || "Failed to schedule meeting");
       }
     } catch (error) {
-      console.error("Error scheduling meeting:", error);
+      console.error("DashboardPage | Schedule meeting failed:", error);
       toast.error("Failed to schedule meeting");
     } finally {
       setIsSchedulingMeeting(false);

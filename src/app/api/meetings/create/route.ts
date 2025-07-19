@@ -4,10 +4,11 @@ import { createDailyRoom } from "@/lib/daily";
 import Meeting from "@/models/Meeting";
 import User from "@/models/User";
 import dbConnect from "@/lib/db";
+import redis from "@/lib/redis";
 
 interface CreateInstantMeetingRequest {
   title: string;
-  duration?: number; // Optional, defaults to 60 minutes
+  duration?: number;
 }
 
 export async function POST(req: NextRequest) {
@@ -22,7 +23,6 @@ export async function POST(req: NextRequest) {
     const { title, duration = 60 } =
       (await req.json()) as CreateInstantMeetingRequest;
 
-    // Validate required fields
     if (!title || title.trim() === "") {
       return NextResponse.json(
         { error: "Meeting title is required" },
@@ -30,10 +30,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Create Daily.co room
     const dailyRoom = await createDailyRoom(title, duration);
 
-    // Create meeting in database with current time as start time
     const meeting = await Meeting.create({
       title: title.trim(),
       hostId: session.user.id,
@@ -43,11 +41,17 @@ export async function POST(req: NextRequest) {
       participants: [], // No participants for instant meetings initially
     });
 
-    // Add meeting to user's meetings
     await User.findOneAndUpdate(
       { email: session.user.email },
       { $push: { meetings: meeting._id } }
     );
+
+    try {
+      await redis.del(`user:${session.user.id}:past_meetings`);
+      await redis.del(`user:${session.user.id}:upcoming_meetings`);
+    } catch (redisError) {
+      console.error("Redis cache invalidation error:", redisError);
+    }
 
     return NextResponse.json(
       {

@@ -1,46 +1,51 @@
+import axios from "axios";
+
 export async function createDailyRoom(
   meetingTitle: string,
   expiryMinutes: number = 60
 ) {
-  // Generate a URL-friendly room name based on the meeting title
   const roomName = `echoloom-${meetingTitle
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "-")}-${Date.now()}`;
 
-  const response = await fetch("https://api.daily.co/v1/rooms", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.DAILY_API_KEY}`,
-    },
-    body: JSON.stringify({
-      name: roomName,
-      properties: {
-        exp: Math.floor(Date.now() / 1000) + expiryMinutes * 60,
-        enable_chat: true,
-        enable_knocking: false, // Disable knocking for headless mode
-        start_video_off: false,
-        start_audio_off: false,
-        enable_people_ui: false, // Disable Daily.co's UI
-        enable_prejoin_ui: false, // Critical: prevents redirect to Daily.co domain
-        enable_network_ui: false, // Disable network UI
-        enable_screenshare: true,
-        lang: "en",
+  try {
+    const response = await axios.post(
+      "https://api.daily.co/v1/rooms",
+      {
+        name: roomName,
+        properties: {
+          exp: Math.floor(Date.now() / 1000) + expiryMinutes * 60,
+          enable_chat: true,
+          enable_knocking: false,
+          start_video_off: false,
+          start_audio_off: false,
+          enable_people_ui: false,
+          enable_prejoin_ui: false, // Critical: prevents redirect to Daily.co domain
+          enable_network_ui: false,
+          enable_screenshare: true,
+          lang: "en",
+        },
       },
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      `Failed to create Daily.co room: ${response.statusText}. ${
-        errorData.info || ""
-      }`
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.DAILY_API_KEY}`,
+        },
+      }
     );
-  }
 
-  const data = await response.json();
-  return data;
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const errorData = error.response?.data || {};
+      throw new Error(
+        `Failed to create Daily.co room: ${error.message}. ${
+          errorData.info || ""
+        }`
+      );
+    }
+    throw error;
+  }
 }
 
 export async function createMeetingToken(
@@ -50,52 +55,57 @@ export async function createMeetingToken(
   isHost: boolean = false,
   expiryMinutes: number = 120
 ) {
-  const response = await fetch("https://api.daily.co/v1/meeting-tokens", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.DAILY_API_KEY}`,
-    },
-    body: JSON.stringify({
-      properties: {
-        room_name: roomName,
-        user_name: participantName,
-        user_id: participantEmail,
-        exp: Math.floor(Date.now() / 1000) + expiryMinutes * 60,
-        is_owner: isHost,
-        enable_screenshare: true,
-        start_video_off: false,
-        start_audio_off: false,
+  try {
+    const response = await axios.post(
+      "https://api.daily.co/v1/meeting-tokens",
+      {
+        properties: {
+          room_name: roomName,
+          user_name: participantName,
+          user_id: participantEmail,
+          exp: Math.floor(Date.now() / 1000) + expiryMinutes * 60,
+          is_owner: isHost,
+          enable_screenshare: true,
+          start_video_off: false,
+          start_audio_off: false,
+        },
       },
-    }),
-  });
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.DAILY_API_KEY}`,
+        },
+      }
+    );
 
-  if (!response.ok) {
-    throw new Error(`Failed to create meeting token: ${response.statusText}`);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(`Failed to create meeting token: ${error.message}`);
+    }
+    throw error;
   }
-
-  const data = await response.json();
-  return data;
 }
 
 export async function validateMeetingToken(token: string) {
-  const response = await fetch(
-    `https://api.daily.co/v1/meeting-tokens/${token}`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${process.env.DAILY_API_KEY}`,
-      },
-    }
-  );
+  try {
+    const response = await axios.get(
+      `https://api.daily.co/v1/meeting-tokens/${token}`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.DAILY_API_KEY}`,
+        },
+      }
+    );
 
-  if (!response.ok) {
-    if (response.status === 404) {
-      return { valid: false, message: "Invalid or expired token" };
+    return { valid: true, data: response.data };
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 404) {
+        return { valid: false, message: "Invalid or expired token" };
+      }
+      throw new Error(`Failed to validate meeting token: ${error.message}`);
     }
-    throw new Error(`Failed to validate meeting token: ${response.statusText}`);
+    throw error;
   }
-
-  const data = await response.json();
-  return { valid: true, data };
 }

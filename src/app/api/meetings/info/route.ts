@@ -28,7 +28,6 @@ interface PopulatedMeeting {
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    console.log("Meeting info API - session:", session?.user?.email);
 
     await dbConnect();
 
@@ -42,8 +41,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Find the meeting by room name
-    console.log("Looking for meeting with roomName:", roomName);
     const meeting = (await MeetingModel.findOne({ dailyRoomName: roomName })
       .populate({
         path: "hostId",
@@ -52,21 +49,12 @@ export async function GET(req: NextRequest) {
       })
       .lean()) as PopulatedMeeting | null;
 
-    console.log("Found meeting:", meeting ? "Yes" : "No");
-
     if (!meeting) {
       // If no session but meeting not found in DB, check if it's a valid Daily room format
       if (!session?.user?.email) {
-        console.log(
-          "No session and no meeting found - checking if room exists in Daily.co"
-        );
-
         // Check if this looks like a valid room name pattern
         if (roomName.startsWith("echoloom-") || roomName.length > 10) {
           // Return minimal info to allow joining
-          console.log(
-            "Allowing join for apparent valid room name without session"
-          );
           return NextResponse.json({
             success: true,
             meeting: {
@@ -88,7 +76,6 @@ export async function GET(req: NextRequest) {
 
     // If no session but meeting exists in DB, this might be a session issue
     if (!session?.user?.email) {
-      console.log("Meeting found but no session - allowing basic access");
       // Return basic meeting info without access control for now
       return NextResponse.json({
         success: true,
@@ -107,27 +94,9 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Check if user is host or participant
     const isHost = meeting.hostId._id.toString() === session.user.id;
-    const isParticipant = meeting.participants.some(
-      (p) => p.email === session.user.email
-    );
 
-    console.log(
-      "Access check - isHost:",
-      isHost,
-      "isParticipant:",
-      isParticipant
-    );
-
-    // Allow access if user is host, participant, or if it's an open meeting
-    if (!isHost && !isParticipant) {
-      console.log(
-        "User is not host or participant, but allowing access for demo"
-      );
-      // For now, we'll allow anyone to access meeting info
-      // You can add more restrictive logic here if needed
-    }
+    console.log("MeetingInfo | Fetched successfully for room:", roomName);
 
     return NextResponse.json({
       success: true,
@@ -144,7 +113,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error("Error fetching meeting info:", error);
+    console.error("MeetingInfo | General error:", error);
     return NextResponse.json(
       { error: "Failed to fetch meeting info" },
       { status: 500 }

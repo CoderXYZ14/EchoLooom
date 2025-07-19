@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { motion } from "motion/react";
 import { Video, User, Mail, ArrowRight, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import axios from "axios";
 
 interface MeetingWrapperProps {
   roomUrl: string;
@@ -35,18 +36,9 @@ export default function MeetingWrapper({
   const [isJoiningAsGuest, setIsJoiningAsGuest] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [showGuestForm, setShowGuestForm] = useState(false);
-  const [proceedToMeeting, setProceedToMeeting] = useState(false);
 
   useEffect(() => {
-    console.log(
-      "MeetingWrapper status changed:",
-      status,
-      "session exists:",
-      !!session,
-      "session user:",
-      session?.user?.email
-    );
-    // Show guest form if no session and not loading
+    // Show guest for meeting if no session and not loading
     if (status === "unauthenticated") {
       setShowGuestForm(true);
     } else if (status === "authenticated") {
@@ -54,18 +46,13 @@ export default function MeetingWrapper({
       setShowGuestForm(false);
       // Clear any guest user data since we now have a real session
       setGuestUser(null);
-      // Go directly to meeting for authenticated users
-      setProceedToMeeting(true);
-      console.log("Setting proceedToMeeting to true for authenticated user");
     }
   }, [status]);
 
   const handleLeave = () => {
     if (guestUser) {
-      // For guests, go to home page
       router.push("/");
     } else {
-      // For authenticated users, go to dashboard
       router.push("/dashboard");
     }
   };
@@ -76,7 +63,6 @@ export default function MeetingWrapper({
       return;
     }
 
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(guestForm.email)) {
       toast.error("Please enter a valid email address");
@@ -85,36 +71,24 @@ export default function MeetingWrapper({
 
     setIsJoiningAsGuest(true);
     try {
-      // Create or update guest user in database
-      const response = await fetch("/api/meetings/guest-join", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: guestForm.name.trim(),
-          email: guestForm.email.trim(),
-          roomName: roomName,
-        }),
+      const response = await axios.post("/api/meetings/guest-join", {
+        name: guestForm.name.trim(),
+        email: guestForm.email.trim(),
+        roomName: roomName,
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        // Set guest user and hide form
+      if (response.status === 200) {
         setGuestUser({
           name: guestForm.name.trim(),
           email: guestForm.email.trim(),
           isGuest: true,
         });
         setShowGuestForm(false);
-        // Go directly to meeting for guest users too
-        setProceedToMeeting(true);
       } else {
-        toast.error(data.error || "Failed to join as guest");
+        toast.error(response.data.error || "Failed to join as guest");
       }
     } catch (error) {
-      console.error("Error joining as guest:", error);
+      console.error("MeetingWrapper | Guest join failed:", error);
       toast.error("Failed to join meeting");
     } finally {
       setIsJoiningAsGuest(false);
@@ -124,19 +98,17 @@ export default function MeetingWrapper({
   const handleGoogleSignIn = async () => {
     setIsSigningIn(true);
     try {
-      // Use the current meeting URL as the callback URL
       const result = await signIn("google", {
         callbackUrl: window.location.href,
         redirect: true,
       });
 
-      // If sign in fails, reset the loading state
       if (result?.error) {
-        console.error("Sign in error:", result.error);
+        console.error("MeetingWrapper | Google sign in failed:", result.error);
         setIsSigningIn(false);
       }
     } catch (error) {
-      console.error("Sign in error:", error);
+      console.error("MeetingWrapper | Sign in process failed:", error);
       setIsSigningIn(false);
     }
   };
@@ -175,7 +147,6 @@ export default function MeetingWrapper({
     </div>
   );
 
-  // Show loading while checking session
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
@@ -190,21 +161,17 @@ export default function MeetingWrapper({
     );
   }
 
-  // Show guest join form if no session
   if (showGuestForm && !session && !guestUser) {
     return (
       <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white overflow-hidden">
-        {/* Background Effects - Same as signin page */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-black dark:via-[#0A0A0A] dark:to-[#121212]" />
 
-          {/* Grid Pattern Overlay */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] dark:bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100px_100px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,black_40%,transparent_100%)]" />
 
           <MovingOrb />
         </div>
 
-        {/* Floating Elements */}
         <div className="absolute inset-0 pointer-events-none">
           {[...Array(20)].map((_, i) => (
             <motion.div
@@ -229,7 +196,6 @@ export default function MeetingWrapper({
           ))}
         </div>
 
-        {/* Back to Home Button */}
         <div className="absolute top-6 left-6 z-10">
           <button
             onClick={() => router.push("/")}
@@ -240,10 +206,8 @@ export default function MeetingWrapper({
           </button>
         </div>
 
-        {/* Main Content */}
         <div className="relative z-10 min-h-screen flex items-center justify-center px-6">
           <div className="w-full max-w-md">
-            {/* Join Meeting Card */}
             <motion.div
               className="relative p-8 rounded-3xl bg-white/80 dark:bg-black/80 backdrop-blur-xl border border-gray-200 dark:border-white/20 shadow-2xl overflow-hidden"
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -254,7 +218,6 @@ export default function MeetingWrapper({
                 boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
               }}
             >
-              {/* Animated background gradient */}
               <motion.div
                 className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-blue-500/5 to-purple-500/5 dark:from-cyan-500/10 dark:via-blue-500/10 dark:to-purple-500/10"
                 animate={{
@@ -268,12 +231,10 @@ export default function MeetingWrapper({
                 }}
               />
 
-              {/* Floating orbs */}
               <div className="absolute top-4 right-4 w-20 h-20 bg-gradient-to-br from-cyan-400/20 to-blue-500/20 rounded-full blur-2xl animate-pulse" />
               <div className="absolute bottom-4 left-4 w-16 h-16 bg-gradient-to-br from-purple-400/20 to-pink-500/20 rounded-full blur-2xl animate-pulse delay-1000" />
 
               <div className="relative z-10 text-center space-y-8">
-                {/* Logo */}
                 <motion.div
                   className="flex items-center justify-center gap-3 mb-8"
                   initial={{ opacity: 0, y: -20 }}
@@ -299,7 +260,6 @@ export default function MeetingWrapper({
                   </span>
                 </motion.div>
 
-                {/* Welcome Text */}
                 <motion.div
                   className="space-y-4"
                   initial={{ opacity: 0, y: 20 }}
@@ -318,7 +278,6 @@ export default function MeetingWrapper({
                   </p>
                 </motion.div>
 
-                {/* Guest Form */}
                 <motion.div
                   className="space-y-6"
                   initial={{ opacity: 0, y: 20 }}
@@ -371,7 +330,6 @@ export default function MeetingWrapper({
                     disabled={isJoiningAsGuest}
                     className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden"
                   >
-                    {/* Button shine effect */}
                     <motion.div
                       className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12"
                       animate={{
@@ -404,7 +362,6 @@ export default function MeetingWrapper({
                     </span>
                   </Button>
 
-                  {/* Divider */}
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
                       <div className="w-full border-t border-gray-200 dark:border-white/20" />
@@ -416,13 +373,11 @@ export default function MeetingWrapper({
                     </div>
                   </div>
 
-                  {/* Google Sign In Button */}
                   <Button
                     onClick={handleGoogleSignIn}
                     disabled={isSigningIn}
                     className="w-full h-14 text-lg font-semibold bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-white/20 hover:border-gray-300 dark:hover:border-white/30 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden"
                   >
-                    {/* Button shine effect */}
                     <motion.div
                       className="absolute inset-0 bg-gradient-to-r from-transparent via-gray-100/50 dark:via-white/10 to-transparent skew-x-12"
                       animate={{
@@ -448,7 +403,6 @@ export default function MeetingWrapper({
                         />
                       ) : (
                         <>
-                          {/* Google Logo */}
                           <svg className="w-6 h-6" viewBox="0 0 24 24">
                             <path
                               fill="#4285F4"
@@ -473,7 +427,6 @@ export default function MeetingWrapper({
                     </span>
                   </Button>
 
-                  {/* Footer Text */}
                   <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
                     By joining, you agree to our{" "}
                     <a
@@ -516,15 +469,6 @@ export default function MeetingWrapper({
       </div>
     );
   }
-
-  console.log(
-    "Final render - proceedToMeeting:",
-    proceedToMeeting,
-    "session:",
-    !!session,
-    "guestUser:",
-    !!guestUser
-  );
 
   return (
     <MeetingErrorBoundary>

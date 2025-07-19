@@ -1,6 +1,6 @@
 /** @type {import('next-sitemap').IConfig} */
 module.exports = {
-  siteUrl: "https://www.echoloom.live",
+  siteUrl: "https://echoloom.live",
   generateRobotsTxt: true,
   sitemapSize: 7000,
   changefreq: "weekly",
@@ -12,7 +12,7 @@ module.exports = {
         allow: "/",
       },
     ],
-    // DO NOT include sitemap.xml here (to avoid recursion)
+
     additionalSitemaps: [],
   },
 };

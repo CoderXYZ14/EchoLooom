@@ -75,7 +75,6 @@ const VideoTile = ({
     ? "You"
     : participant.user_name || `Participant ${participantId.slice(-4)}`;
 
-  // Get user info for avatar
   const userImage = isLocal ? session?.user?.image : null;
   const userEmail = isLocal ? session?.user?.email : null;
   const getInitials = (name: string, email?: string) => {
@@ -163,7 +162,6 @@ const ScreenShareTile = ({ participantId }: { participantId: string }) => {
 
   if (!participant?.tracks?.screenVideo?.persistentTrack) return null;
 
-  // Get proper display name - use session data for local participant
   const isLocalParticipant = participant.local;
   const displayName = isLocalParticipant
     ? "You"
@@ -201,7 +199,6 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
 
-  // Use either session user or guest user
   const currentUser = session?.user || guestUser;
 
   const [error, setError] = useState<string | null>(null);
@@ -227,7 +224,6 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
   const gainNodeRef = useRef<GainNode | null>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
 
-  // Animation values
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
@@ -243,7 +239,6 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [mouseX, mouseY]);
 
-  // Mobile detection
   useEffect(() => {
     const checkMobile = () => {
       const isMobileDevice =
@@ -277,13 +272,11 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
     setIsScreenSharing(screens.length > 0);
   }, [screens]);
 
-  // Set up Web Audio API for volume control
   useEffect(() => {
     if (!daily) return;
 
     const setupAudioContext = () => {
       try {
-        // Create audio context and gain node
         const audioContext = new (window.AudioContext ||
           (
             window as typeof window & {
@@ -311,7 +304,10 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
                 source.connect(gainNode);
               } catch (error) {
                 // Element might already be connected or not ready
-                console.log("Could not connect audio element:", error);
+                console.error(
+                  "DailyMeeting | Audio element connection failed:",
+                  error
+                );
               }
             }
           });
@@ -335,8 +331,8 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
           audioContext.close();
         };
       } catch (error) {
-        console.log(
-          "Web Audio API not supported or failed to initialize:",
+        console.error(
+          "DailyMeeting | Web Audio API initialization failed:",
           error
         );
         // Fallback to direct volume control on audio elements
@@ -379,22 +375,12 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
     if (!daily || hasJoinedRef.current) return;
 
     try {
-      console.log("Attempting to join meeting with URL:", roomUrl);
-      console.log("Daily instance ready:", !!daily);
       setIsJoining(true);
       setError(null);
       hasJoinedRef.current = true;
 
-      // Get user name from session or guest user
       const userName = currentUser?.name || "Guest";
-      console.log("Joining as user:", userName);
-      console.log("User info:", {
-        name: currentUser?.name,
-        email: currentUser?.email,
-        isGuest: guestUser?.isGuest || false,
-      });
 
-      console.log("Calling daily.join() with:", { url: roomUrl, userName });
       await daily.join({
         url: roomUrl,
         userName: userName,
@@ -406,17 +392,14 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
       setLocalAudioEnabled(preMeetingSettings.microphoneEnabled);
       setLocalVideoEnabled(preMeetingSettings.cameraEnabled);
 
-      console.log("Successfully joined meeting");
       setIsJoining(false);
     } catch (error: unknown) {
-      console.error("Failed to join meeting:", error);
-      console.error("Error details:", {
-        message: error instanceof Error ? error.message : "Unknown error",
+      console.error("DailyMeeting | Join meeting failed:", {
+        error: error instanceof Error ? error.message : "Unknown error",
         roomUrl,
         userName: currentUser?.name || "Guest",
       });
 
-      // Add more specific error handling
       let errorMessage = "Failed to join meeting. Please try again.";
       if (error instanceof Error) {
         if (
@@ -458,7 +441,7 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
       await daily.setLocalAudio(newState);
       setLocalAudioEnabled(newState);
     } catch (error) {
-      console.error("Failed to toggle audio:", error);
+      console.error("DailyMeeting | Audio toggle failed:", error);
     }
   };
 
@@ -469,7 +452,7 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
       await daily.setLocalVideo(newState);
       setLocalVideoEnabled(newState);
     } catch (error) {
-      console.error("Failed to toggle video:", error);
+      console.error("DailyMeeting | Video toggle failed:", error);
     }
   };
 
@@ -482,7 +465,7 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
         await daily.startScreenShare();
       }
     } catch (error) {
-      console.error("Failed to toggle screen share:", error);
+      console.error("DailyMeeting | Screen share toggle failed:", error);
     }
   };
 
@@ -495,7 +478,7 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
       try {
         await daily.leave();
       } catch (error) {
-        console.error("Error leaving meeting:", error);
+        console.error("DailyMeeting | Leave meeting failed:", error);
       }
     }
     onLeave();
@@ -506,7 +489,6 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
   };
 
   const handleJoinMeeting = () => {
-    // Stop preview stream before joining
     if (previewStream) {
       previewStream.getTracks().forEach((track) => track.stop());
       setPreviewStream(null);
@@ -526,8 +508,8 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
         previewVideoRef.current.srcObject = stream;
       }
     } catch (error) {
-      console.error("Error accessing camera:", error);
-      // If camera access fails, turn off camera setting
+      console.error("DailyMeeting | Camera access failed:", error);
+
       setPreMeetingSettings((prev) => ({ ...prev, cameraEnabled: false }));
     }
   };
@@ -542,7 +524,6 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
     }
   };
 
-  // Handle camera toggle
   const toggleCameraPreview = (enabled: boolean) => {
     setPreMeetingSettings((prev) => ({ ...prev, cameraEnabled: enabled }));
     if (enabled) {
@@ -552,13 +533,11 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
     }
   };
 
-  // Start camera preview on mount if camera is enabled
   useEffect(() => {
     if (showPreMeetingSetup && preMeetingSettings.cameraEnabled) {
       startCameraPreview();
     }
 
-    // Cleanup on unmount
     return () => {
       if (previewStream) {
         previewStream.getTracks().forEach((track) => track.stop());
@@ -566,7 +545,6 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
     };
   }, [showPreMeetingSetup]);
 
-  // Update video element when stream changes
   useEffect(() => {
     if (previewVideoRef.current && previewStream) {
       previewVideoRef.current.srcObject = previewStream;
@@ -580,7 +558,6 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
     .map((screen) => screen.session_id)
     .filter(Boolean);
 
-  // Pre-meeting setup screen
   if (showPreMeetingSetup) {
     const MovingOrb = () => (
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -618,17 +595,14 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
 
     return (
       <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white overflow-hidden">
-        {/* Background Effects - Same as guest page */}
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-b from-white via-gray-50 to-gray-100 dark:from-black dark:via-[#0A0A0A] dark:to-[#121212]" />
 
-          {/* Grid Pattern Overlay */}
           <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] dark:bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:100px_100px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,black_40%,transparent_100%)]" />
 
           <MovingOrb />
         </div>
 
-        {/* Floating Elements */}
         <div className="absolute inset-0 pointer-events-none">
           {[...Array(20)].map((_, i) => (
             <motion.div
@@ -653,10 +627,8 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
           ))}
         </div>
 
-        {/* Main Content */}
         <div className="relative z-10 min-h-screen flex items-center justify-center px-6">
           <div className="w-full max-w-md">
-            {/* Pre-Meeting Setup Card */}
             <motion.div
               className="relative p-6 rounded-2xl bg-white/80 dark:bg-black/80 backdrop-blur-xl border border-gray-200 dark:border-white/20 shadow-2xl overflow-hidden"
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -667,7 +639,6 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
                 boxShadow: "0 20px 40px -12px rgba(0, 0, 0, 0.25)",
               }}
             >
-              {/* Animated background gradient */}
               <motion.div
                 className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-blue-500/5 to-purple-500/5 dark:from-cyan-500/10 dark:via-blue-500/10 dark:to-purple-500/10"
                 animate={{
@@ -681,12 +652,10 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
                 }}
               />
 
-              {/* Floating orbs */}
               <div className="absolute top-4 right-4 w-20 h-20 bg-gradient-to-br from-cyan-400/20 to-blue-500/20 rounded-full blur-2xl animate-pulse" />
               <div className="absolute bottom-4 left-4 w-16 h-16 bg-gradient-to-br from-purple-400/20 to-pink-500/20 rounded-full blur-2xl animate-pulse delay-1000" />
 
               <div className="relative z-10 text-center space-y-6">
-                {/* Logo */}
                 <motion.div
                   className="flex items-center justify-center gap-2 mb-4"
                   initial={{ opacity: 0, y: -20 }}
@@ -712,7 +681,6 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
                   </span>
                 </motion.div>
 
-                {/* Welcome Text */}
                 <motion.div
                   className="space-y-3"
                   initial={{ opacity: 0, y: 20 }}
@@ -727,7 +695,6 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
                   </p>
                 </motion.div>
 
-                {/* Camera Preview */}
                 <motion.div
                   className="space-y-3"
                   initial={{ opacity: 0, y: 20 }}
@@ -758,21 +725,18 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
                       </div>
                     )}
 
-                    {/* User name overlay */}
                     <div className="absolute bottom-2 left-2 bg-black/50 backdrop-blur-sm text-white px-2 py-1 rounded-md text-xs font-medium">
                       {currentUser?.name || "Guest"} (You)
                     </div>
                   </div>
                 </motion.div>
 
-                {/* Settings */}
                 <motion.div
                   className="space-y-3"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.5 }}
                 >
-                  {/* Camera Setting */}
                   <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/50 border border-gray-200 dark:border-white/20 rounded-lg hover:bg-white/70 dark:hover:bg-black/70 transition-all duration-200">
                     <div className="flex items-center space-x-3">
                       <div
@@ -817,7 +781,6 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
                     </Button>
                   </div>
 
-                  {/* Microphone Setting */}
                   <div className="flex items-center justify-between p-3 bg-white/50 dark:bg-black/50 border border-gray-200 dark:border-white/20 rounded-lg hover:bg-white/70 dark:hover:bg-black/70 transition-all duration-200">
                     <div className="flex items-center space-x-3">
                       <div
@@ -868,7 +831,6 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
                   </div>
                 </motion.div>
 
-                {/* Join Button */}
                 <motion.div
                   className="space-y-3"
                   initial={{ opacity: 0, y: 20 }}
@@ -879,7 +841,6 @@ const DailyMeeting: React.FC<DailyMeetingProps> = ({
                     onClick={handleJoinMeeting}
                     className="w-full h-12 text-base font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group relative overflow-hidden"
                   >
-                    {/* Button shine effect */}
                     <motion.div
                       className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12"
                       animate={{
